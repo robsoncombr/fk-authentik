@@ -1,4 +1,4 @@
-import { SummarizedSyncStatus } from "@goauthentik/admin/admin-overview/charts/SyncStatusChart";
+import { SyncStatus } from "@goauthentik/admin/admin-overview/charts/SyncStatusChart";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { AKChart } from "@goauthentik/elements/charts/Chart";
 import "@goauthentik/elements/forms/ConfirmationForm";
@@ -10,7 +10,7 @@ import { customElement } from "lit/decorators.js";
 import { OutpostsApi } from "@goauthentik/api";
 
 @customElement("ak-admin-status-chart-outpost")
-export class OutpostStatusChart extends AKChart<SummarizedSyncStatus[]> {
+export class OutpostStatusChart extends AKChart<SyncStatus[]> {
     getChartType(): string {
         return "doughnut";
     }
@@ -26,16 +26,16 @@ export class OutpostStatusChart extends AKChart<SummarizedSyncStatus[]> {
         };
     }
 
-    async apiRequest(): Promise<SummarizedSyncStatus[]> {
+    async apiRequest(): Promise<SyncStatus[]> {
         const api = new OutpostsApi(DEFAULT_CONFIG);
         const outposts = await api.outpostsInstancesList({});
-        const outpostStats: SummarizedSyncStatus[] = [];
+        const outpostStats: SyncStatus[] = [];
         await Promise.all(
             outposts.results.map(async (element) => {
                 const health = await api.outpostsInstancesHealthList({
                     uuid: element.pk || "",
                 });
-                const singleStats: SummarizedSyncStatus = {
+                const singleStats: SyncStatus = {
                     unsynced: 0,
                     healthy: 0,
                     failed: 0,
@@ -59,7 +59,7 @@ export class OutpostStatusChart extends AKChart<SummarizedSyncStatus[]> {
         return outpostStats;
     }
 
-    getChartData(data: SummarizedSyncStatus[]): ChartData {
+    getChartData(data: SyncStatus[]): ChartData {
         return {
             labels: [msg("Healthy outposts"), msg("Outdated outposts"), msg("Unhealthy outposts")],
             datasets: data.map((d) => {

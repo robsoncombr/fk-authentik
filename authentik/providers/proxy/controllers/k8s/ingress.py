@@ -56,10 +56,7 @@ class IngressReconciler(KubernetesObjectReconciler[V1Ingress]):
             proxy_provider: ProxyProvider
             external_host_name = urlparse(proxy_provider.external_host)
             expected_hosts.append(external_host_name.hostname)
-            if (
-                external_host_name.scheme == "https"
-                and self.controller.outpost.config.kubernetes_ingress_secret_name
-            ):
+            if external_host_name.scheme == "https":
                 expected_hosts_tls.append(external_host_name.hostname)
         expected_hosts.sort()
         expected_hosts_tls.sort()
@@ -119,10 +116,7 @@ class IngressReconciler(KubernetesObjectReconciler[V1Ingress]):
         ):
             proxy_provider: ProxyProvider
             external_host_name = urlparse(proxy_provider.external_host)
-            if (
-                external_host_name.scheme == "https"
-                and self.controller.outpost.config.kubernetes_ingress_secret_name
-            ):
+            if external_host_name.scheme == "https":
                 tls_hosts.append(external_host_name.hostname)
             if proxy_provider.mode in [
                 ProxyMode.FORWARD_SINGLE,
@@ -166,15 +160,13 @@ class IngressReconciler(KubernetesObjectReconciler[V1Ingress]):
             rules.append(rule)
         tls_config = None
         if tls_hosts:
-            tls_config = [
-                V1IngressTLS(
-                    hosts=tls_hosts,
-                    secret_name=self.controller.outpost.config.kubernetes_ingress_secret_name,
-                )
-            ]
+            tls_config = V1IngressTLS(
+                hosts=tls_hosts,
+                secret_name=self.controller.outpost.config.kubernetes_ingress_secret_name,
+            )
         spec = V1IngressSpec(
             rules=rules,
-            tls=tls_config,
+            tls=[tls_config],
         )
         if self.controller.outpost.config.kubernetes_ingress_class_name:
             spec.ingress_class_name = self.controller.outpost.config.kubernetes_ingress_class_name

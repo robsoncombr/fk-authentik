@@ -1,5 +1,6 @@
 import "@goauthentik/admin/policies/BoundPoliciesList";
 import "@goauthentik/admin/sources/saml/SAMLSourceForm";
+import "@goauthentik/app/elements/rbac/ObjectPermissionsPage";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { EVENT_REFRESH } from "@goauthentik/common/constants";
 import "@goauthentik/components/events/ObjectChangelog";
@@ -9,7 +10,6 @@ import { CodeMirrorMode } from "@goauthentik/elements/CodeMirror";
 import "@goauthentik/elements/Tabs";
 import "@goauthentik/elements/buttons/SpinnerButton";
 import "@goauthentik/elements/forms/ModalForm";
-import "@goauthentik/elements/rbac/ObjectPermissionsPage";
 
 import { msg } from "@lit/localize";
 import { CSSResult, TemplateResult, html } from "lit";

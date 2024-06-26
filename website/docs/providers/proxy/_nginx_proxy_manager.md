@@ -1,10 +1,6 @@
-```
-# Upgrade WebSocket if requested, otherwise use keepalive
-map $http_upgrade $connection_upgrade_keepalive {
-    default upgrade;
-    ''      '';
-}
+For Nginx Proxy Manager you can use this snippet
 
+```
 # Increase buffer size for large headers
 # This is needed only if you get 'upstream sent too big header while reading response
 # header from upstream' error when trying to access an application protected by goauthentik
@@ -20,9 +16,6 @@ location / {
     # Set any other headers your application might need
     # proxy_set_header Host $host;
     # proxy_set_header ...
-    # Support for websocket
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection $connection_upgrade_keepalive;
 
     ##############################
     # authentik-specific config
@@ -48,7 +41,7 @@ location / {
 
 # all requests to /outpost.goauthentik.io must be accessible without authentication
 location /outpost.goauthentik.io {
-    proxy_pass              http://outpost.company:9000;
+    proxy_pass              http://outpost.company:9000/outpost.goauthentik.io;
     # ensure the host of this vserver matches your external URL you've configured
     # in authentik
     proxy_set_header        Host $host;

@@ -1,8 +1,8 @@
-import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
+import { DEFAULT_CONFIG } from "@goauthentik/app/common/api/config";
+import { PaginatedResponse, Table, TableColumn } from "@goauthentik/app/elements/table/Table";
 import "@goauthentik/elements/forms/DeleteBulkForm";
 import "@goauthentik/elements/forms/ModalForm";
 import "@goauthentik/elements/rbac/UserObjectPermissionForm";
-import { PaginatedResponse, Table, TableColumn } from "@goauthentik/elements/table/Table";
 import "@patternfly/elements/pf-tooltip/pf-tooltip.js";
 
 import { msg } from "@lit/localize";
@@ -45,7 +45,7 @@ export class UserAssignedObjectPermissionTable extends Table<UserAssignedObjectP
             ordering: "codename",
         });
         modelPermissions.results = modelPermissions.results.filter((value) => {
-            return value.codename !== `add_${this.model?.split(".")[1]}`;
+            return !value.codename.startsWith("add_");
         });
         this.modelPermissions = modelPermissions;
         return perms;
@@ -113,15 +113,13 @@ export class UserAssignedObjectPermissionTable extends Table<UserAssignedObjectP
     row(item: UserAssignedObjectPermission): TemplateResult[] {
         const baseRow = [html` <a href="#/identity/users/${item.pk}"> ${item.username} </a> `];
         this.modelPermissions?.results.forEach((perm) => {
-            let cell = html`<i class="fas fa-times pf-m-danger"></i>`;
+            let cell = html`X`;
             if (item.permissions.filter((uperm) => uperm.codename === perm.codename).length > 0) {
                 cell = html`<pf-tooltip position="top" content=${msg("Directly assigned")}
-                    ><i class="fas fa-check pf-m-success"></i
-                ></pf-tooltip>`;
+                    >✓</pf-tooltip
+                >`;
             } else if (item.isSuperuser) {
-                cell = html`<pf-tooltip position="top" content=${msg("Superuser")}
-                    ><i class="fas fa-check pf-m-success"></i
-                ></pf-tooltip>`;
+                cell = html`<pf-tooltip position="top" content=${msg("Superuser")}>✓</pf-tooltip>`;
             }
             baseRow.push(cell);
         });

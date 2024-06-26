@@ -1,6 +1,6 @@
 """base model tests"""
 
-from collections.abc import Callable
+from typing import Callable
 
 from django.test import TestCase
 from rest_framework.serializers import BaseSerializer

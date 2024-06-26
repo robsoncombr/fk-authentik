@@ -47,7 +47,7 @@ class RACStartView(EnterprisePolicyAccessView):
                 },
             )
         except FlowNonApplicableException:
-            raise Http404 from None
+            raise Http404
         plan.insert_stage(
             in_memory_stage(
                 RACFinalStage,
@@ -132,7 +132,16 @@ class RACFinalStage(RedirectStage):
             flow=self.executor.plan.flow_pk,
             endpoint=self.endpoint.name,
         ).from_http(self.request)
-        self.executor.current_stage.destination = self.request.build_absolute_uri(
-            reverse("authentik_providers_rac:if-rac", kwargs={"token": str(token.token)})
+        setattr(
+            self.executor.current_stage,
+            "destination",
+            self.request.build_absolute_uri(
+                reverse(
+                    "authentik_providers_rac:if-rac",
+                    kwargs={
+                        "token": str(token.token),
+                    },
+                )
+            ),
         )
         return super().get_challenge(*args, **kwargs)

@@ -3,7 +3,7 @@
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import IntEnum
-from typing import Any
+from typing import Any, Optional
 
 from asgiref.sync import async_to_sync
 from channels.exceptions import DenyConnection
@@ -49,10 +49,10 @@ class WebsocketMessage:
 class OutpostConsumer(JsonWebsocketConsumer):
     """Handler for Outposts that connect over websockets for health checks and live updates"""
 
-    outpost: Outpost | None = None
+    outpost: Optional[Outpost] = None
     logger: BoundLogger
 
-    instance_uid: str | None = None
+    instance_uid: Optional[str] = None
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -71,7 +71,7 @@ class OutpostConsumer(JsonWebsocketConsumer):
             self.accept()
         except RuntimeError as exc:
             self.logger.warning("runtime error during accept", exc=exc)
-            raise DenyConnection() from None
+            raise DenyConnection()
         self.outpost = outpost
         query = QueryDict(self.scope["query_string"].decode())
         self.instance_uid = query.get("instance_uuid", self.channel_name)
@@ -121,10 +121,6 @@ class OutpostConsumer(JsonWebsocketConsumer):
         if msg.instruction == WebsocketMessageInstruction.HELLO:
             state.version = msg.args.pop("version", None)
             state.build_hash = msg.args.pop("buildHash", "")
-            state.golang_version = msg.args.pop("golangVersion", "")
-            state.openssl_enabled = msg.args.pop("opensslEnabled", False)
-            state.openssl_version = msg.args.pop("opensslVersion", "")
-            state.fips_enabled = msg.args.pop("fipsEnabled", False)
             state.args.update(msg.args)
         elif msg.instruction == WebsocketMessageInstruction.ACK:
             return

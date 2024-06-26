@@ -3,14 +3,14 @@
 from dataclasses import asdict
 from random import SystemRandom
 from time import sleep
-from typing import Any
+from typing import Any, Optional
 
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import HttpResponse
 from django.utils.translation import gettext as _
 from drf_spectacular.utils import PolymorphicProxySerializer, extend_schema_field
-from rest_framework.fields import BooleanField, CharField, ChoiceField, DictField, ListField
+from rest_framework.fields import BooleanField, CharField, DictField, ListField
 from rest_framework.serializers import ValidationError
 from sentry_sdk.hub import Hub
 
@@ -66,7 +66,6 @@ class IdentificationChallenge(Challenge):
     user_fields = ListField(child=CharField(), allow_empty=True, allow_null=True)
     password_fields = BooleanField()
     application_pre = CharField(required=False)
-    flow_designation = ChoiceField(FlowDesignation.choices)
 
     enroll_url = CharField(required=False)
     recovery_url = CharField(required=False)
@@ -85,7 +84,7 @@ class IdentificationChallengeResponse(ChallengeResponse):
     password = CharField(required=False, allow_blank=True, allow_null=True)
     component = CharField(default="ak-stage-identification")
 
-    pre_user: User | None = None
+    pre_user: Optional[User] = None
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         """Validate that user exists, and optionally their password"""
@@ -160,7 +159,7 @@ class IdentificationStageView(ChallengeStageView):
 
     response_class = IdentificationChallengeResponse
 
-    def get_user(self, uid_value: str) -> User | None:
+    def get_user(self, uid_value: str) -> Optional[User]:
         """Find user instance. Returns None if no user was found."""
         current_stage: IdentificationStage = self.executor.current_stage
         query = Q()
@@ -195,12 +194,11 @@ class IdentificationStageView(ChallengeStageView):
         challenge = IdentificationChallenge(
             data={
                 "type": ChallengeTypes.NATIVE.value,
-                "component": "ak-stage-identification",
                 "primary_action": self.get_primary_action(),
+                "component": "ak-stage-identification",
                 "user_fields": current_stage.user_fields,
                 "password_fields": bool(current_stage.password_stage),
                 "show_source_labels": current_stage.show_source_labels,
-                "flow_designation": self.executor.flow.designation,
             }
         )
         # If the user has been redirected to us whilst trying to access an
@@ -239,9 +237,7 @@ class IdentificationStageView(ChallengeStageView):
             ui_login_button = source.ui_login_button(self.request)
             if ui_login_button:
                 button = asdict(ui_login_button)
-                source_challenge = ui_login_button.challenge
-                source_challenge.is_valid()
-                button["challenge"] = source_challenge.data
+                button["challenge"] = ui_login_button.challenge.data
                 ui_sources.append(button)
         challenge.initial_data["sources"] = ui_sources
         return challenge

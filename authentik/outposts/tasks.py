@@ -3,7 +3,7 @@
 from os import R_OK, access
 from pathlib import Path
 from socket import gethostname
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 from asgiref.sync import async_to_sync
@@ -49,7 +49,8 @@ LOGGER = get_logger()
 CACHE_KEY_OUTPOST_DOWN = "goauthentik.io/outposts/teardown/%s"
 
 
-def controller_for_outpost(outpost: Outpost) -> type[BaseController] | None:
+# pylint: disable=too-many-return-statements
+def controller_for_outpost(outpost: Outpost) -> Optional[type[BaseController]]:
     """Get a controller for the outpost, when a service connection is defined"""
     if not outpost.service_connection:
         return None
@@ -149,8 +150,10 @@ def outpost_controller(
         if not controller_type:
             return
         with controller_type(outpost, outpost.service_connection) as controller:
-            LOGGER.debug("---------------Outpost Controller logs starting----------------")
             logs = getattr(controller, f"{action}_with_logs")()
+            LOGGER.debug("---------------Outpost Controller logs starting----------------")
+            for log in logs:
+                LOGGER.debug(log)
             LOGGER.debug("-----------------Outpost Controller logs end-------------------")
     except (ControllerException, ServiceConnectionInvalid) as exc:
         self.set_error(exc)
@@ -192,7 +195,7 @@ def outpost_post_save(model_class: str, model_pk: Any):
         LOGGER.debug("Trigger reconcile for outpost", instance=instance)
         outpost_controller.delay(str(instance.pk))
 
-    if isinstance(instance, OutpostModel | Outpost):
+    if isinstance(instance, (OutpostModel, Outpost)):
         LOGGER.debug("triggering outpost update from outpostmodel/outpost", instance=instance)
         outpost_send_update(instance)
 

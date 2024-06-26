@@ -1,12 +1,14 @@
 ///<reference types="@hcaptcha/types"/>
 import "@goauthentik/elements/EmptyState";
+import { PFSize } from "@goauthentik/elements/Spinner";
 import "@goauthentik/elements/forms/FormElement";
 import "@goauthentik/flow/FormStatic";
+import "@goauthentik/flow/stages/access_denied/AccessDeniedStage";
 import { BaseStage } from "@goauthentik/flow/stages/base";
 import type { TurnstileObject } from "turnstile-types";
 
 import { msg } from "@lit/localize";
-import { CSSResult, PropertyValues, TemplateResult, html } from "lit";
+import { CSSResult, TemplateResult, html } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 
@@ -23,8 +25,6 @@ interface TurnstileWindow extends Window {
     turnstile: TurnstileObject;
 }
 
-const captchaContainerID = "captcha-container";
-
 @customElement("ak-stage-captcha")
 export class CaptchaStage extends BaseStage<CaptchaChallenge, CaptchaChallengeResponseRequest> {
     static get styles(): CSSResult[] {
@@ -36,71 +36,50 @@ export class CaptchaStage extends BaseStage<CaptchaChallenge, CaptchaChallengeRe
     @state()
     error?: string;
 
-    @state()
-    captchaInteractive: boolean = true;
-
-    @state()
-    captchaContainer: HTMLDivElement;
-
-    @state()
-    scriptElement?: HTMLScriptElement;
-
-    constructor() {
-        super();
-        this.captchaContainer = document.createElement("div");
-        this.captchaContainer.id = captchaContainerID;
-    }
-
-    updated(changedProperties: PropertyValues<this>) {
-        if (changedProperties.has("challenge") && this.challenge !== undefined) {
-            this.scriptElement = document.createElement("script");
-            this.scriptElement.src = this.challenge.jsUrl;
-            this.scriptElement.async = true;
-            this.scriptElement.defer = true;
-            this.scriptElement.dataset.akCaptchaScript = "true";
-            this.scriptElement.onload = () => {
-                console.debug("authentik/stages/captcha: script loaded");
-                let found = false;
-                let lastError = undefined;
-                this.handlers.forEach((handler) => {
-                    let handlerFound = false;
-                    try {
-                        console.debug(`authentik/stages/captcha[${handler.name}]: trying handler`);
-                        handlerFound = handler.apply(this);
-                        if (handlerFound) {
-                            console.debug(
-                                `authentik/stages/captcha[${handler.name}]: handler succeeded`,
-                            );
-                            found = true;
-                        }
-                    } catch (exc) {
+    firstUpdated(): void {
+        const script = document.createElement("script");
+        script.src = this.challenge.jsUrl;
+        script.async = true;
+        script.defer = true;
+        const captchaContainer = document.createElement("div");
+        document.body.appendChild(captchaContainer);
+        script.onload = () => {
+            console.debug("authentik/stages/captcha: script loaded");
+            let found = false;
+            let lastError = undefined;
+            this.handlers.forEach((handler) => {
+                let handlerFound = false;
+                try {
+                    console.debug(`authentik/stages/captcha[${handler.name}]: trying handler`);
+                    handlerFound = handler.apply(this, [captchaContainer]);
+                    if (handlerFound) {
                         console.debug(
-                            `authentik/stages/captcha[${handler.name}]: handler failed: ${exc}`,
+                            `authentik/stages/captcha[${handler.name}]: handler succeeded`,
                         );
-                        if (handlerFound) {
-                            lastError = exc;
-                        }
+                        found = true;
                     }
-                });
-                if (!found && lastError) {
-                    this.error = (lastError as Error).toString();
+                } catch (exc) {
+                    console.debug(
+                        `authentik/stages/captcha[${handler.name}]: handler failed: ${exc}`,
+                    );
+                    if (handlerFound) {
+                        lastError = exc;
+                    }
                 }
-            };
-            document.head
-                .querySelectorAll("[data-ak-captcha-script=true]")
-                .forEach((el) => el.remove());
-            document.head.appendChild(this.scriptElement);
-        }
+            });
+            if (!found && lastError) {
+                this.error = (lastError as Error).toString();
+            }
+        };
+        document.head.appendChild(script);
     }
 
-    handleGReCaptcha(): boolean {
+    handleGReCaptcha(container: HTMLDivElement): boolean {
         if (!Object.hasOwn(window, "grecaptcha")) {
             return false;
         }
-        this.captchaInteractive = false;
-        document.body.appendChild(this.captchaContainer);
         grecaptcha.ready(() => {
-            const captchaId = grecaptcha.render(this.captchaContainer, {
+            const captchaId = grecaptcha.render(container, {
                 sitekey: this.challenge.siteKey,
                 callback: (token) => {
                     this.host?.submit({
@@ -114,13 +93,11 @@ export class CaptchaStage extends BaseStage<CaptchaChallenge, CaptchaChallengeRe
         return true;
     }
 
-    handleHCaptcha(): boolean {
+    handleHCaptcha(container: HTMLDivElement): boolean {
         if (!Object.hasOwn(window, "hcaptcha")) {
             return false;
         }
-        this.captchaInteractive = false;
-        document.body.appendChild(this.captchaContainer);
-        const captchaId = hcaptcha.render(this.captchaContainer, {
+        const captchaId = hcaptcha.render(container, {
             sitekey: this.challenge.siteKey,
             size: "invisible",
             callback: (token) => {
@@ -133,13 +110,11 @@ export class CaptchaStage extends BaseStage<CaptchaChallenge, CaptchaChallengeRe
         return true;
     }
 
-    handleTurnstile(): boolean {
+    handleTurnstile(container: HTMLDivElement): boolean {
         if (!Object.hasOwn(window, "turnstile")) {
             return false;
         }
-        this.captchaInteractive = false;
-        document.body.appendChild(this.captchaContainer);
-        (window as unknown as TurnstileWindow).turnstile.render(`#${captchaContainerID}`, {
+        (window as unknown as TurnstileWindow).turnstile.render(container, {
             sitekey: this.challenge.siteKey,
             callback: (token) => {
                 this.host?.submit({
@@ -148,19 +123,6 @@ export class CaptchaStage extends BaseStage<CaptchaChallenge, CaptchaChallengeRe
             },
         });
         return true;
-    }
-
-    renderBody(): TemplateResult {
-        if (this.error) {
-            return html`<ak-empty-state icon="fa-times" header=${this.error}> </ak-empty-state>`;
-        }
-        if (this.captchaInteractive) {
-            return html`${this.captchaContainer}`;
-        }
-        return html`<ak-empty-state
-            ?loading=${true}
-            header=${msg("Verifying...")}
-        ></ak-empty-state>`;
     }
 
     render(): TemplateResult {
@@ -184,7 +146,12 @@ export class CaptchaStage extends BaseStage<CaptchaChallenge, CaptchaChallengeRe
                             >
                         </div>
                     </ak-form-static>
-                    ${this.renderBody()}
+                    ${this.error
+                        ? html`<ak-stage-access-denied-icon errorMessage=${ifDefined(this.error)}>
+                          </ak-stage-access-denied-icon>`
+                        : html`<div>
+                              <ak-spinner size=${PFSize.XLarge}></ak-spinner>
+                          </div>`}
                 </form>
             </div>
             <footer class="pf-c-login__main-footer">

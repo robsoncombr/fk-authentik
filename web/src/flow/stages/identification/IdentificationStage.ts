@@ -1,11 +1,11 @@
-import { renderSourceIcon } from "@goauthentik/admin/sources/utils";
+import { renderSourceIcon } from "@goauthentik/app/admin/sources/utils";
 import "@goauthentik/elements/Divider";
 import "@goauthentik/elements/EmptyState";
 import "@goauthentik/elements/forms/FormElement";
 import { BaseStage } from "@goauthentik/flow/stages/base";
 
 import { msg, str } from "@lit/localize";
-import { CSSResult, PropertyValues, TemplateResult, css, html, nothing } from "lit";
+import { CSSResult, TemplateResult, css, html } from "lit";
 import { customElement } from "lit/decorators.js";
 
 import PFAlert from "@patternfly/patternfly/components/Alert/alert.css";
@@ -17,7 +17,6 @@ import PFTitle from "@patternfly/patternfly/components/Title/title.css";
 import PFBase from "@patternfly/patternfly/patternfly-base.css";
 
 import {
-    FlowDesignationEnum,
     IdentificationChallenge,
     IdentificationChallengeResponseRequest,
     LoginSource,
@@ -63,11 +62,9 @@ export class IdentificationStage extends BaseStage<
         `);
     }
 
-    updated(changedProperties: PropertyValues<this>) {
-        if (changedProperties.has("challenge") && this.challenge !== undefined) {
-            this.autoRedirect();
-            this.createHelperForm();
-        }
+    firstUpdated(): void {
+        this.autoRedirect();
+        this.createHelperForm();
     }
 
     autoRedirect(): void {
@@ -196,14 +193,14 @@ export class IdentificationStage extends BaseStage<
                       ${msg("Need an account?")}
                       <a id="enroll" href="${this.challenge.enrollUrl}">${msg("Sign up.")}</a>
                   </p>`
-                : nothing}
+                : html``}
             ${this.challenge.recoveryUrl
                 ? html`<p class="pf-c-login__main-footer-band-item">
                       <a id="recovery" href="${this.challenge.recoveryUrl}"
                           >${msg("Forgot username or password?")}</a
                       >
                   </p>`
-                : nothing}
+                : html``}
         </div>`;
     }
 
@@ -223,16 +220,7 @@ export class IdentificationStage extends BaseStage<
             [UserFieldsEnum.Upn]: msg("UPN"),
         };
         const label = OR_LIST_FORMATTERS.format(fields.map((f) => uiFields[f]));
-        return html`${this.challenge.flowDesignation === FlowDesignationEnum.Recovery
-                ? html`
-                      <p>
-                          ${msg(
-                              "Enter the email associated with your account, and we'll send you a link to reset your password.",
-                          )}
-                      </p>
-                  `
-                : nothing}
-            <ak-form-element
+        return html`<ak-form-element
                 label=${label}
                 ?required="${true}"
                 class="pf-c-form__group"
@@ -267,18 +255,26 @@ export class IdentificationStage extends BaseStage<
                           />
                       </ak-form-element>
                   `
-                : nothing}
+                : html``}
             ${"non_field_errors" in (this.challenge?.responseErrors || {})
                 ? this.renderNonFieldErrors(this.challenge?.responseErrors?.non_field_errors || [])
-                : nothing}
+                : html``}
             <div class="pf-c-form__group pf-m-action">
                 <button type="submit" class="pf-c-button pf-m-primary pf-m-block">
                     ${this.challenge.primaryAction}
                 </button>
             </div>
             ${this.challenge.passwordlessUrl
-                ? html`<ak-divider>${msg("Or")}</ak-divider>`
-                : nothing}`;
+                ? html`<ak-divider>${msg("Or")}</ak-divider>
+                      <div>
+                          <a
+                              href=${this.challenge.passwordlessUrl}
+                              class="pf-c-button pf-m-secondary pf-m-block"
+                          >
+                              ${msg("Use a security key")}
+                          </a>
+                      </div>`
+                : html``}`;
     }
 
     render(): TemplateResult {
@@ -300,20 +296,8 @@ export class IdentificationStage extends BaseStage<
                         ? html`<p>
                               ${msg(str`Login to continue to ${this.challenge.applicationPre}.`)}
                           </p>`
-                        : nothing}
+                        : html``}
                     ${this.renderInput()}
-                    ${this.challenge.passwordlessUrl
-                        ? html`
-                              <div>
-                                  <a
-                                      href=${this.challenge.passwordlessUrl}
-                                      class="pf-c-button pf-m-secondary pf-m-block"
-                                  >
-                                      ${msg("Use a security key")}
-                                  </a>
-                              </div>
-                          `
-                        : nothing}
                 </form>
             </div>
             <footer class="pf-c-login__main-footer">

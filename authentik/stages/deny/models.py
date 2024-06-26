@@ -20,7 +20,7 @@ class DenyStage(Stage):
         return DenyStageSerializer
 
     @property
-    def view(self) -> type[View]:
+    def type(self) -> type[View]:
         from authentik.stages.deny.stage import DenyStageView
 
         return DenyStageView

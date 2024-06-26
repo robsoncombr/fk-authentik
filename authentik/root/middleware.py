@@ -1,17 +1,15 @@
 """Dynamically set SameSite depending if the upstream connection is TLS or not"""
 
-from collections.abc import Callable
 from hashlib import sha512
 from time import perf_counter, time
-from typing import Any
+from typing import Any, Callable, Optional
 
-from channels.exceptions import DenyConnection
 from django.conf import settings
 from django.contrib.sessions.backends.base import UpdateError
 from django.contrib.sessions.exceptions import SessionInterrupted
 from django.contrib.sessions.middleware import SessionMiddleware as UpstreamSessionMiddleware
 from django.http.request import HttpRequest
-from django.http.response import HttpResponse, HttpResponseServerError
+from django.http.response import HttpResponse
 from django.middleware.csrf import CSRF_SESSION_KEY
 from django.middleware.csrf import CsrfViewMiddleware as UpstreamCsrfViewMiddleware
 from django.utils.cache import patch_vary_headers
@@ -101,7 +99,7 @@ class SessionMiddleware(UpstreamSessionMiddleware):
                     expires = http_date(expires_time)
                 # Save the session data and refresh the client cookie.
                 # Skip session save for 500 responses, refs #3881.
-                if response.status_code != HttpResponseServerError.status_code:
+                if response.status_code != 500:
                     try:
                         request.session.save()
                     except UpdateError:
@@ -109,7 +107,7 @@ class SessionMiddleware(UpstreamSessionMiddleware):
                             "The request's session was deleted before the "
                             "request completed. The user may have logged "
                             "out in a concurrent request, for example."
-                        ) from None
+                        )
                     payload = {
                         "sid": request.session.session_key,
                         "iss": "authentik",
@@ -193,7 +191,7 @@ class ClientIPMiddleware:
 
     # FIXME: this should probably not be in `root` but rather in a middleware in `outposts`
     # but for now it's fine
-    def _get_outpost_override_ip(self, request: HttpRequest) -> str | None:
+    def _get_outpost_override_ip(self, request: HttpRequest) -> Optional[str]:
         """Get the actual remote IP when set by an outpost. Only
         allowed when the request is authenticated, by an outpost internal service account"""
         if (
@@ -230,7 +228,7 @@ class ClientIPMiddleware:
         setattr(request, self.request_attr_outpost_user, user)
         return delegated_ip
 
-    def _get_client_ip(self, request: HttpRequest | None) -> str:
+    def _get_client_ip(self, request: Optional[HttpRequest]) -> str:
         """Attempt to get the client's IP by checking common HTTP Headers.
         Returns none if no IP Could be found"""
         if not request:
@@ -241,7 +239,7 @@ class ClientIPMiddleware:
         return self._get_client_ip_from_meta(request.META)
 
     @staticmethod
-    def get_outpost_user(request: HttpRequest) -> User | None:
+    def get_outpost_user(request: HttpRequest) -> Optional[User]:
         """Get outpost user that authenticated this request"""
         return getattr(request, ClientIPMiddleware.request_attr_outpost_user, None)
 
@@ -272,11 +270,7 @@ class ChannelsLoggingMiddleware:
 
     async def __call__(self, scope, receive, send):
         self.log(scope)
-        try:
-            return await self.inner(scope, receive, send)
-        except Exception as exc:
-            LOGGER.warning("Exception in ASGI application", exc=exc)
-            raise DenyConnection() from None
+        return await self.inner(scope, receive, send)
 
     def log(self, scope: dict, **kwargs):
         """Log request"""

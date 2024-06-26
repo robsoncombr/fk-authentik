@@ -1,18 +1,17 @@
 """RAC Models"""
 
-from typing import Any
+from typing import Any, Optional
 from uuid import uuid4
 
 from deepmerge import always_merger
 from django.db import models
 from django.db.models import QuerySet
 from django.http import HttpRequest
-from django.templatetags.static import static
 from django.utils.translation import gettext as _
 from rest_framework.serializers import Serializer
 from structlog.stdlib import get_logger
 
-from authentik.core.expression.exceptions import PropertyMappingExpressionException
+from authentik.core.exceptions import PropertyMappingExpressionException
 from authentik.core.models import ExpiringModel, PropertyMapping, Provider, User, default_token_key
 from authentik.events.models import Event, EventAction
 from authentik.lib.models import SerializerModel
@@ -59,14 +58,10 @@ class RACProvider(Provider):
     )
 
     @property
-    def launch_url(self) -> str | None:
+    def launch_url(self) -> Optional[str]:
         """URL to this provider and initiate authorization for the user.
         Can return None for providers that are not URL-based"""
         return "goauthentik.io://providers/rac/launch"
-
-    @property
-    def icon_url(self) -> str | None:
-        return static("authentik/sources/rac.svg")
 
     @property
     def component(self) -> str:
@@ -117,7 +112,7 @@ class RACPropertyMapping(PropertyMapping):
 
     static_settings = models.JSONField(default=dict)
 
-    def evaluate(self, user: User | None, request: HttpRequest | None, **kwargs) -> Any:
+    def evaluate(self, user: Optional[User], request: Optional[HttpRequest], **kwargs) -> Any:
         """Evaluate `self.expression` using `**kwargs` as Context."""
         if len(self.static_settings) > 0:
             return self.static_settings
@@ -206,7 +201,10 @@ class ConnectionToken(ExpiringModel):
         return settings
 
     def __str__(self):
-        return f"RAC Connection token {self.session_id} to {self.provider_id}/{self.endpoint_id}"
+        return (
+            f"RAC Connection token {self.session.user} to "
+            f"{self.endpoint.provider.name}/{self.endpoint.name}"
+        )
 
     class Meta:
         verbose_name = _("RAC Connection token")

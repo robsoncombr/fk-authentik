@@ -86,9 +86,7 @@ func NewFlowExecutor(ctx context.Context, flowSlug string, refConfig *api.Config
 		Jar:       jar,
 		Transport: fe,
 	}
-	if authz, ok := refConfig.DefaultHeader["Authorization"]; ok {
-		fe.token = strings.Split(authz, " ")[1]
-	}
+	fe.token = strings.Split(refConfig.DefaultHeader["Authorization"], " ")[1]
 	config.AddDefaultHeader(HeaderAuthentikOutpostToken, fe.token)
 	fe.api = api.NewAPIClient(config)
 	return fe

@@ -16,7 +16,6 @@ export interface RadioOption<T> {
     description?: TemplateResult;
     default?: boolean;
     value: T;
-    disabled?: boolean;
 }
 
 @customElement("ak-radio")
@@ -78,9 +77,6 @@ export class Radio<T> extends CustomEmitterElement(AKElement) {
             // This is a controlled input. Stop the native event from escaping or affecting the
             // value.  We'll do that ourselves.
             ev.stopPropagation();
-            if (option.disabled) {
-                return;
-            }
             this.value = option.value;
             this.dispatchCustomEvent("change", { value: option.value });
             this.dispatchCustomEvent("input", { value: option.value });
@@ -97,7 +93,6 @@ export class Radio<T> extends CustomEmitterElement(AKElement) {
                 name="${this.name}"
                 id=${elId}
                 .checked=${option.value === this.value}
-                .disabled=${option.disabled}
             />
             <label class="pf-c-radio__label" for=${elId}>${option.label}</label>
             ${option.description

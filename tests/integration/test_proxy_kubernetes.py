@@ -1,5 +1,7 @@
 """Test Controllers"""
 
+from typing import Optional
+
 import pytest
 import yaml
 from django.test import TestCase
@@ -19,12 +21,18 @@ LOGGER = get_logger()
 class TestProxyKubernetes(TestCase):
     """Test Controllers"""
 
-    controller: KubernetesController | None
+    controller: Optional[KubernetesController]
 
     def setUp(self):
         # Ensure that local connection have been created
-        outpost_connection_discovery()
+        outpost_connection_discovery()  # pylint: disable=no-value-for-parameter
         self.controller = None
+
+    def tearDown(self) -> None:
+        if self.controller:
+            for log in self.controller.down_with_logs():
+                LOGGER.info(log)
+        return super().tearDown()
 
     @pytest.mark.timeout(120)
     def test_kubernetes_controller_static(self):

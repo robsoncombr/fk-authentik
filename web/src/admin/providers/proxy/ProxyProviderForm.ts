@@ -72,7 +72,7 @@ export class ProxyProviderFormPage extends BaseProviderForm<ProxyProvider> {
         }
         if (this.instance) {
             return new ProvidersApi(DEFAULT_CONFIG).providersProxyUpdate({
-                id: this.instance.pk,
+                id: this.instance.pk || 0,
                 proxyProviderRequest: data,
             });
         } else {

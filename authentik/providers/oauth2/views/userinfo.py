@@ -1,6 +1,6 @@
 """authentik OAuth2 OpenID Userinfo views"""
 
-from typing import Any
+from typing import Any, Optional
 
 from deepmerge import always_merger
 from django.http import HttpRequest, HttpResponse
@@ -11,10 +11,11 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from structlog.stdlib import get_logger
 
-from authentik.core.expression.exceptions import PropertyMappingExpressionException
+from authentik.core.exceptions import PropertyMappingExpressionException
 from authentik.events.models import Event, EventAction
 from authentik.flows.challenge import PermissionDict
 from authentik.providers.oauth2.constants import (
+    SCOPE_AUTHENTIK_API,
     SCOPE_GITHUB_ORG_READ,
     SCOPE_GITHUB_USER,
     SCOPE_GITHUB_USER_EMAIL,
@@ -38,7 +39,7 @@ class UserInfoView(View):
     """Create a dictionary with all the requested claims about the End-User.
     See: http://openid.net/specs/openid-connect-core-1_0.html#UserInfoResponse"""
 
-    token: RefreshToken | None
+    token: Optional[RefreshToken]
 
     def get_scope_descriptions(
         self, scopes: list[str], provider: OAuth2Provider
@@ -56,6 +57,7 @@ class UserInfoView(View):
             SCOPE_GITHUB_USER_READ: _("GitHub Compatibility: Access your User Information"),
             SCOPE_GITHUB_USER_EMAIL: _("GitHub Compatibility: Access you Email addresses"),
             SCOPE_GITHUB_ORG_READ: _("GitHub Compatibility: Access your Groups"),
+            SCOPE_AUTHENTIK_API: _("authentik API Access on behalf of your user"),
         }
         for scope in scopes:
             if scope in special_scope_map:

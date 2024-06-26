@@ -71,7 +71,7 @@ class Brand(SerializerModel):
         """Get default locale"""
         try:
             return self.attributes.get("settings", {}).get("locale", "")
-
+        # pylint: disable=broad-except
         except Exception as exc:
             LOGGER.warning("Failed to get default locale", exc=exc)
             return ""
@@ -84,7 +84,3 @@ class Brand(SerializerModel):
     class Meta:
         verbose_name = _("Brand")
         verbose_name_plural = _("Brands")
-        indexes = [
-            models.Index(fields=["domain"]),
-            models.Index(fields=["default"]),
-        ]

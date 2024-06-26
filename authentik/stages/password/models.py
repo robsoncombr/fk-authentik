@@ -1,5 +1,7 @@
 """password stage models"""
 
+from typing import Optional
+
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -51,7 +53,7 @@ class PasswordStage(ConfigurableStage, Stage):
         return PasswordStageSerializer
 
     @property
-    def view(self) -> type[View]:
+    def type(self) -> type[View]:
         from authentik.stages.password.stage import PasswordStageView
 
         return PasswordStageView
@@ -60,7 +62,7 @@ class PasswordStage(ConfigurableStage, Stage):
     def component(self) -> str:
         return "ak-stage-password-form"
 
-    def ui_user_settings(self) -> UserSettingSerializer | None:
+    def ui_user_settings(self) -> Optional[UserSettingSerializer]:
         if not self.configure_flow:
             return None
         return UserSettingSerializer(

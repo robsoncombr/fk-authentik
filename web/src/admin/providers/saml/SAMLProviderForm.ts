@@ -47,7 +47,7 @@ export class SAMLProviderFormPage extends BaseProviderForm<SAMLProvider> {
     async send(data: SAMLProvider): Promise<SAMLProvider> {
         if (this.instance) {
             return new ProvidersApi(DEFAULT_CONFIG).providersSamlUpdate({
-                id: this.instance.pk,
+                id: this.instance.pk || 0,
                 sAMLProviderRequest: data,
             });
         } else {

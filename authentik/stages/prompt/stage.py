@@ -1,9 +1,8 @@
 """Prompt Stage Logic"""
 
-from collections.abc import Callable, Iterator
 from email.policy import Policy
 from types import MethodType
-from typing import Any
+from typing import Any, Callable, Iterator
 
 from django.db.models.query import QuerySet
 from django.http import HttpRequest, HttpResponse
@@ -132,7 +131,7 @@ class PromptChallengeResponse(ChallengeResponse):
         password_fields: QuerySet[Prompt] = self.stage_instance.fields.filter(
             type=FieldTypes.PASSWORD
         )
-        if password_fields.exists() and password_fields.count() == 2:  # noqa: PLR2004
+        if password_fields.exists() and password_fields.count() == 2:
             self._validate_password_fields(*[field.field_key for field in password_fields])
 
         engine = ListPolicyEngine(
@@ -150,26 +149,22 @@ class PromptChallengeResponse(ChallengeResponse):
         return attrs
 
 
-def username_field_validator_factory() -> Callable[[PromptChallengeResponse, str], Any]:
+def username_field_validator_factory() -> Callable[[PromptChallenge, str], Any]:
     """Return a `clean_` method for `field`. Clean method checks if username is taken already."""
 
-    def username_field_validator(self: PromptChallengeResponse, value: str) -> Any:
+    def username_field_validator(self: PromptChallenge, value: str) -> Any:
         """Check for duplicate usernames"""
-        pending_user = self.stage.get_pending_user()
-        query = User.objects.all()
-        if pending_user.pk:
-            query = query.exclude(username=pending_user.username)
-        if query.filter(username=value).exists():
+        if User.objects.filter(username=value).exists():
             raise ValidationError("Username is already taken.")
         return value
 
     return username_field_validator
 
 
-def password_single_validator_factory() -> Callable[[PromptChallengeResponse, str], Any]:
+def password_single_validator_factory() -> Callable[[PromptChallenge, str], Any]:
     """Return a `clean_` method for `field`. Clean method checks if username is taken already."""
 
-    def password_single_clean(self: PromptChallengeResponse, value: str) -> Any:
+    def password_single_clean(self: PromptChallenge, value: str) -> Any:
         """Send password validation signals for e.g. LDAP Source"""
         password_validate.send(sender=self, password=value, plan_context=self.plan.context)
         return value

@@ -10,15 +10,8 @@ class DatabaseWrapper(BaseDatabaseWrapper):
 
     def get_connection_params(self):
         """Refresh DB credentials before getting connection params"""
+        CONFIG.refresh("postgresql.password")
         conn_params = super().get_connection_params()
-
-        prefix = "postgresql"
-        if self.alias.startswith("replica_"):
-            prefix = f"postgresql.read_replicas.{self.alias.removeprefix('replica_')}"
-
-        for setting in ("host", "port", "user", "password"):
-            conn_params[setting] = CONFIG.refresh(f"{prefix}.{setting}")
-            if conn_params[setting] is None and self.alias.startswith("replica_"):
-                conn_params[setting] = CONFIG.refresh(f"postgresql.{setting}")
-
+        conn_params["user"] = CONFIG.get("postgresql.user")
+        conn_params["password"] = CONFIG.get("postgresql.password")
         return conn_params

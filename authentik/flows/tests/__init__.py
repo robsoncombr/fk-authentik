@@ -1,7 +1,7 @@
 """Test helpers"""
 
 from json import loads
-from typing import Any
+from typing import Any, Optional
 
 from django.http.response import HttpResponse
 from django.urls.base import reverse
@@ -15,11 +15,12 @@ from authentik.flows.models import Flow
 class FlowTestCase(APITestCase):
     """Helpers for testing flows and stages."""
 
+    # pylint: disable=invalid-name
     def assertStageResponse(
         self,
         response: HttpResponse,
-        flow: Flow | None = None,
-        user: User | None = None,
+        flow: Optional[Flow] = None,
+        user: Optional[User] = None,
         **kwargs,
     ) -> dict[str, Any]:
         """Assert various attributes of a stage response"""
@@ -44,6 +45,7 @@ class FlowTestCase(APITestCase):
             self.assertEqual(raw_response[key], expected)
         return raw_response
 
+    # pylint: disable=invalid-name
     def assertStageRedirects(self, response: HttpResponse, to: str) -> dict[str, Any]:
         """Wrapper around assertStageResponse that checks for a redirect"""
         return self.assertStageResponse(

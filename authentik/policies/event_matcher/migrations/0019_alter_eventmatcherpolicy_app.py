@@ -39,7 +39,6 @@ class Migration(migrations.Migration):
                     ("authentik.sources.oauth", "authentik Sources.OAuth"),
                     ("authentik.sources.plex", "authentik Sources.Plex"),
                     ("authentik.sources.saml", "authentik Sources.SAML"),
-                    ("authentik.sources.scim", "authentik Sources.SCIM"),
                     ("authentik.stages.authenticator_duo", "authentik Stages.Authenticator.Duo"),
                     ("authentik.stages.authenticator_sms", "authentik Stages.Authenticator.SMS"),
                     (

@@ -2,15 +2,11 @@
 
 from django.contrib.auth.models import AnonymousUser
 from django.test import TestCase
-from django.urls import reverse
 from guardian.utils import get_anonymous_user
 
 from authentik.core.models import SourceUserMatchingModes, User
 from authentik.core.sources.flow_manager import Action
-from authentik.core.sources.stage import PostSourceStage
 from authentik.core.tests.utils import create_test_flow
-from authentik.flows.planner import FlowPlan
-from authentik.flows.views.executor import SESSION_KEY_PLAN
 from authentik.lib.generators import generate_id
 from authentik.lib.tests.utils import get_request
 from authentik.policies.denied import AccessDeniedResponse
@@ -25,62 +21,42 @@ class TestSourceFlowManager(TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.authentication_flow = create_test_flow()
-        self.enrollment_flow = create_test_flow()
-        self.source: OAuthSource = OAuthSource.objects.create(
-            name=generate_id(),
-            slug=generate_id(),
-            authentication_flow=self.authentication_flow,
-            enrollment_flow=self.enrollment_flow,
-        )
+        self.source: OAuthSource = OAuthSource.objects.create(name="test")
         self.identifier = generate_id()
 
     def test_unauthenticated_enroll(self):
         """Test un-authenticated user enrolling"""
-        request = get_request("/", user=AnonymousUser())
-        flow_manager = OAuthSourceFlowManager(self.source, request, self.identifier, {})
+        flow_manager = OAuthSourceFlowManager(
+            self.source, get_request("/", user=AnonymousUser()), self.identifier, {}
+        )
         action, _ = flow_manager.get_action()
         self.assertEqual(action, Action.ENROLL)
-        response = flow_manager.get_flow()
-        self.assertEqual(response.status_code, 302)
-        flow_plan: FlowPlan = request.session[SESSION_KEY_PLAN]
-        self.assertEqual(flow_plan.bindings[0].stage.view, PostSourceStage)
+        flow_manager.get_flow()
 
     def test_unauthenticated_auth(self):
         """Test un-authenticated user authenticating"""
         UserOAuthSourceConnection.objects.create(
             user=get_anonymous_user(), source=self.source, identifier=self.identifier
         )
-        request = get_request("/", user=AnonymousUser())
-        flow_manager = OAuthSourceFlowManager(self.source, request, self.identifier, {})
+
+        flow_manager = OAuthSourceFlowManager(
+            self.source, get_request("/", user=AnonymousUser()), self.identifier, {}
+        )
         action, _ = flow_manager.get_action()
         self.assertEqual(action, Action.AUTH)
-        response = flow_manager.get_flow()
-        self.assertEqual(response.status_code, 302)
-        flow_plan: FlowPlan = request.session[SESSION_KEY_PLAN]
-        self.assertEqual(flow_plan.bindings[0].stage.view, PostSourceStage)
+        flow_manager.get_flow()
 
     def test_authenticated_link(self):
         """Test authenticated user linking"""
-        user = User.objects.create(username="foo", email="foo@bar.baz")
-        request = get_request("/", user=user)
-        flow_manager = OAuthSourceFlowManager(self.source, request, self.identifier, {})
-        action, connection = flow_manager.get_action()
-        self.assertEqual(action, Action.LINK)
-        self.assertIsNone(connection.pk)
-        response = flow_manager.get_flow()
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(
-            response.url,
-            reverse("authentik_core:if-user") + "#/settings;page-sources",
+        UserOAuthSourceConnection.objects.create(
+            user=get_anonymous_user(), source=self.source, identifier=self.identifier
         )
-
-    def test_unauthenticated_link(self):
-        """Test un-authenticated user linking"""
-        flow_manager = OAuthSourceFlowManager(self.source, get_request("/"), self.identifier, {})
-        action, connection = flow_manager.get_action()
+        user = User.objects.create(username="foo", email="foo@bar.baz")
+        flow_manager = OAuthSourceFlowManager(
+            self.source, get_request("/", user=user), self.identifier, {}
+        )
+        action, _ = flow_manager.get_action()
         self.assertEqual(action, Action.LINK)
-        self.assertIsNone(connection.pk)
         flow_manager.get_flow()
 
     def test_unauthenticated_enroll_email(self):
@@ -197,5 +173,5 @@ class TestSourceFlowManager(TestCase):
         self.assertEqual(action, Action.ENROLL)
         response = flow_manager.get_flow()
         self.assertIsInstance(response, AccessDeniedResponse)
-
+        # pylint: disable=no-member
         self.assertEqual(response.error_message, "foo")

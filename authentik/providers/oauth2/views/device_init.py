@@ -1,9 +1,11 @@
 """Device flow views"""
 
+from typing import Optional
+
 from django.http import HttpRequest, HttpResponse
 from django.utils.translation import gettext as _
 from django.views import View
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ErrorDetail
 from rest_framework.fields import CharField, IntegerField
 from structlog.stdlib import get_logger
 
@@ -31,7 +33,7 @@ LOGGER = get_logger()
 QS_KEY_CODE = "code"  # nosec
 
 
-def get_application(provider: OAuth2Provider) -> Application | None:
+def get_application(provider: OAuth2Provider) -> Optional[Application]:
     """Get application from provider"""
     try:
         app = provider.application
@@ -42,7 +44,7 @@ def get_application(provider: OAuth2Provider) -> Application | None:
         return None
 
 
-def validate_code(code: int, request: HttpRequest) -> HttpResponse | None:
+def validate_code(code: int, request: HttpRequest) -> Optional[HttpResponse]:
     """Validate user token"""
     token = DeviceToken.objects.filter(
         user_code=code,
@@ -57,7 +59,6 @@ def validate_code(code: int, request: HttpRequest) -> HttpResponse | None:
     scope_descriptions = UserInfoView().get_scope_descriptions(token.scope, token.provider)
     planner = FlowPlanner(token.provider.authorization_flow)
     planner.allow_empty_flows = True
-    planner.use_cache = False
     try:
         plan = planner.plan(
             request,
@@ -129,13 +130,6 @@ class OAuthDeviceCodeChallengeResponse(ChallengeResponse):
     code = IntegerField()
     component = CharField(default="ak-provider-oauth2-device-code")
 
-    def validate_code(self, code: int) -> HttpResponse | None:
-        """Validate code and save the returned http response"""
-        response = validate_code(code, self.stage.request)
-        if not response:
-            raise ValidationError(_("Invalid code"), "invalid")
-        return response
-
 
 class OAuthDeviceCodeStage(ChallengeStageView):
     """Flow challenge for users to enter device codes"""
@@ -151,4 +145,12 @@ class OAuthDeviceCodeStage(ChallengeStageView):
         )
 
     def challenge_valid(self, response: ChallengeResponse) -> HttpResponse:
-        return response.validated_data["code"]
+        code = response.validated_data["code"]
+        validation = validate_code(code, self.request)
+        if not validation:
+            response._errors.setdefault("code", [])
+            response._errors["code"].append(ErrorDetail(_("Invalid code"), "invalid"))
+            return self.challenge_invalid(response)
+        # Run cancel to cleanup the current flow
+        self.executor.cancel()
+        return validation

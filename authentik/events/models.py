@@ -7,6 +7,7 @@ from difflib import get_close_matches
 from functools import lru_cache
 from inspect import currentframe
 from smtplib import SMTPException
+from typing import Optional
 from uuid import uuid4
 
 from django.apps import apps
@@ -51,8 +52,6 @@ from authentik.stages.email.utils import TemplateEmailMessage
 from authentik.tenants.models import Tenant
 
 LOGGER = get_logger()
-DISCORD_FIELD_LIMIT = 25
-NOTIFICATION_SUMMARY_LENGTH = 75
 
 
 def default_event_duration():
@@ -66,7 +65,7 @@ def default_brand():
     return sanitize_dict(model_to_dict(DEFAULT_BRAND))
 
 
-@lru_cache
+@lru_cache()
 def django_app_names() -> list[str]:
     """Get a cached list of all django apps' names (not labels)"""
     return [x.name for x in apps.app_configs.values()]
@@ -199,7 +198,7 @@ class Event(SerializerModel, ExpiringModel):
     @staticmethod
     def new(
         action: str | EventAction,
-        app: str | None = None,
+        app: Optional[str] = None,
         **kwargs,
     ) -> "Event":
         """Create new Event instance from arguments. Instance is NOT saved."""
@@ -225,7 +224,7 @@ class Event(SerializerModel, ExpiringModel):
         self.user = get_user(user)
         return self
 
-    def from_http(self, request: HttpRequest, user: User | None = None) -> "Event":
+    def from_http(self, request: HttpRequest, user: Optional[User] = None) -> "Event":
         """Add data from a Django-HttpRequest, allowing the creation of
         Events independently from requests.
         `user` arguments optionally overrides user from requests."""
@@ -305,16 +304,6 @@ class Event(SerializerModel, ExpiringModel):
     class Meta:
         verbose_name = _("Event")
         verbose_name_plural = _("Events")
-        indexes = [
-            models.Index(fields=["action"]),
-            models.Index(fields=["user"]),
-            models.Index(fields=["app"]),
-            models.Index(fields=["created"]),
-            models.Index(fields=["client_ip"]),
-            models.Index(
-                models.F("context__authorized_application"), name="authentik_e_ctx_app__idx"
-            ),
-        ]
 
 
 class TransportMode(models.TextChoices):
@@ -429,7 +418,7 @@ class NotificationTransport(SerializerModel):
                 if not isinstance(value, str):
                     continue
                 # https://birdie0.github.io/discord-webhooks-guide/other/field_limits.html
-                if len(fields) >= DISCORD_FIELD_LIMIT:
+                if len(fields) >= 25:
                     continue
                 fields.append({"title": key[:256], "value": value[:1024]})
         body = {
@@ -490,7 +479,7 @@ class NotificationTransport(SerializerModel):
                     continue
                 context["key_value"][key] = value
         else:
-            context["title"] += notification.body[:NOTIFICATION_SUMMARY_LENGTH]
+            context["title"] += notification.body[:75]
         # TODO: improve permission check
         if notification.user.is_superuser:
             context["source"] = {
@@ -507,7 +496,7 @@ class NotificationTransport(SerializerModel):
         try:
             from authentik.stages.email.tasks import send_mail
 
-            return send_mail(mail.__dict__)
+            return send_mail(mail.__dict__)  # pylint: disable=no-value-for-parameter
         except (SMTPException, ConnectionError, OSError) as exc:
             raise NotificationTransportError(exc) from exc
 
@@ -551,12 +540,8 @@ class Notification(SerializerModel):
         return NotificationSerializer
 
     def __str__(self) -> str:
-        body_trunc = (
-            (self.body[:NOTIFICATION_SUMMARY_LENGTH] + "..")
-            if len(self.body) > NOTIFICATION_SUMMARY_LENGTH
-            else self.body
-        )
-        return f"Notification for user {self.user_id}: {body_trunc}"
+        body_trunc = (self.body[:75] + "..") if len(self.body) > 75 else self.body
+        return f"Notification for user {self.user}: {body_trunc}"
 
     class Meta:
         verbose_name = _("Notification")

@@ -116,7 +116,6 @@ class Migration(BaseMigration):
                     host=CONFIG.get("redis.host"),
                     port=6379,
                     db=db,
-                    username=CONFIG.get("redis.username"),
                     password=CONFIG.get("redis.password"),
                 )
                 redis.flushall()

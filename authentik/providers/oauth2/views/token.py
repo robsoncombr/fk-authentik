@@ -1,13 +1,12 @@
 """authentik OAuth2 Token views"""
 
-from base64 import b64decode, urlsafe_b64encode
-from binascii import Error
+from base64 import urlsafe_b64encode
 from dataclasses import InitVar, dataclass
 from datetime import datetime
 from hashlib import sha256
 from re import error as RegexError
 from re import fullmatch
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 from django.http import HttpRequest, HttpResponse
@@ -24,14 +23,11 @@ from authentik.core.middleware import CTX_AUTH_VIA
 from authentik.core.models import (
     USER_ATTRIBUTE_EXPIRES,
     USER_ATTRIBUTE_GENERATED,
-    USER_PATH_SYSTEM_PREFIX,
     Application,
     Token,
     TokenIntents,
     User,
-    UserTypes,
 )
-from authentik.events.middleware import audit_ignore
 from authentik.events.models import Event, EventAction
 from authentik.events.signals import get_login_event
 from authentik.flows.planner import PLAN_CONTEXT_APPLICATION
@@ -69,6 +65,7 @@ LOGGER = get_logger()
 
 
 @dataclass(slots=True)
+# pylint: disable=too-many-instance-attributes
 class TokenParams:
     """Token params"""
 
@@ -81,16 +78,16 @@ class TokenParams:
 
     provider: OAuth2Provider
 
-    authorization_code: AuthorizationCode | None = None
-    refresh_token: RefreshToken | None = None
-    device_code: DeviceToken | None = None
-    user: User | None = None
+    authorization_code: Optional[AuthorizationCode] = None
+    refresh_token: Optional[RefreshToken] = None
+    device_code: Optional[DeviceToken] = None
+    user: Optional[User] = None
 
-    code_verifier: str | None = None
+    code_verifier: Optional[str] = None
 
     raw_code: InitVar[str] = ""
     raw_token: InitVar[str] = ""
-    request: InitVar[HttpRequest | None] = None
+    request: InitVar[Optional[HttpRequest]] = None
 
     @staticmethod
     def parse(
@@ -210,7 +207,7 @@ class TokenParams:
                     message="Invalid redirect_uri configured",
                     provider=self.provider,
                 ).from_http(request)
-                raise TokenError("invalid_client") from None
+                raise TokenError("invalid_client")
 
         # Check against forbidden schemes
         if urlparse(self.redirect_uri).scheme in FORBIDDEN_URI_SCHEMES:
@@ -289,29 +286,11 @@ class TokenParams:
             raise TokenError("invalid_grant")
 
     def __post_init_client_credentials(self, request: HttpRequest):
-        # client_credentials flow with client assertion
         if request.POST.get(CLIENT_ASSERTION_TYPE, "") != "":
             return self.__post_init_client_credentials_jwt(request)
-        # authentik-custom-ish client credentials flow
-        if request.POST.get("username", "") != "":
-            return self.__post_init_client_credentials_creds(
-                request, request.POST.get("username"), request.POST.get("password")
-            )
-        # Standard method which creates an automatic user
-        if self.client_secret == self.provider.client_secret:
-            return self.__post_init_client_credentials_generated(request)
-        # Standard workaround method which stores username:password
-        # as client_secret
-        try:
-            user, _, password = b64decode(self.client_secret).decode("utf-8").partition(":")
-            return self.__post_init_client_credentials_creds(request, user, password)
-        except (ValueError, Error):
-            raise TokenError("invalid_grant") from None
-
-    def __post_init_client_credentials_creds(
-        self, request: HttpRequest, username: str, password: str
-    ):
         # Authenticate user based on credentials
+        username = request.POST.get("username")
+        password = request.POST.get("password")
         user = User.objects.filter(username=username).first()
         if not user:
             raise TokenError("invalid_grant")
@@ -337,7 +316,9 @@ class TokenParams:
                 PLAN_CONTEXT_APPLICATION: app,
             },
         ).from_http(request, user=user)
+        return None
 
+    # pylint: disable=too-many-locals
     def __post_init_client_credentials_jwt(self, request: HttpRequest):
         assertion_type = request.POST.get(CLIENT_ASSERTION_TYPE, "")
         if assertion_type != CLIENT_ASSERTION_TYPE_JWT:
@@ -352,8 +333,8 @@ class TokenParams:
 
         token = None
 
-        source: OAuthSource | None = None
-        parsed_key: PyJWK | None = None
+        source: Optional[OAuthSource] = None
+        parsed_key: Optional[PyJWK] = None
 
         # Fully decode the JWT without verifying the signature, so we can get access to
         # the header.
@@ -367,7 +348,7 @@ class TokenParams:
             )
         except (PyJWTError, ValueError, TypeError, AttributeError) as exc:
             LOGGER.warning("failed to parse JWT for kid lookup", exc=exc)
-            raise TokenError("invalid_grant") from None
+            raise TokenError("invalid_grant")
         expected_kid = decode_unvalidated["header"]["kid"]
         for source in self.provider.jwks_sources.filter(
             oidc_jwks__keys__contains=[{"kid": expected_kid}]
@@ -428,35 +409,6 @@ class TokenParams:
             },
         ).from_http(request, user=self.user)
 
-    def __post_init_client_credentials_generated(self, request: HttpRequest):
-        # Authorize user access
-        app = Application.objects.filter(provider=self.provider).first()
-        if not app or not app.provider:
-            raise TokenError("invalid_grant")
-        self.user, _ = User.objects.update_or_create(
-            # trim username to ensure the entire username is max 150 chars
-            # (22 chars being the length of the "template")
-            username=f"ak-{self.provider.name[:150-22]}-client_credentials",
-            defaults={
-                "attributes": {
-                    USER_ATTRIBUTE_GENERATED: True,
-                },
-                "last_login": timezone.now(),
-                "name": f"Autogenerated user from application {app.name} (client credentials)",
-                "path": f"{USER_PATH_SYSTEM_PREFIX}/apps/{app.slug}",
-                "type": UserTypes.SERVICE_ACCOUNT,
-            },
-        )
-        self.__check_policy_access(app, request)
-
-        Event.new(
-            action=EventAction.LOGIN,
-            **{
-                PLAN_CONTEXT_METHOD: "oauth_client_secret",
-                PLAN_CONTEXT_APPLICATION: app,
-            },
-        ).from_http(request, user=self.user)
-
     def __post_init_device_code(self, request: HttpRequest):
         device_code = request.POST.get("device_code", "")
         code = DeviceToken.objects.filter(device_code=device_code, provider=self.provider).first()
@@ -466,33 +418,29 @@ class TokenParams:
 
     def __create_user_from_jwt(self, token: dict[str, Any], app: Application, source: OAuthSource):
         """Create user from JWT"""
-        with audit_ignore():
-            self.user, created = User.objects.update_or_create(
-                username=f"{self.provider.name}-{token.get('sub')}",
-                defaults={
-                    "attributes": {
-                        USER_ATTRIBUTE_GENERATED: True,
-                    },
-                    "last_login": timezone.now(),
-                    "name": (
-                        f"Autogenerated user from application {app.name} (client credentials JWT)"
-                    ),
-                    "path": source.get_user_path(),
-                    "type": UserTypes.SERVICE_ACCOUNT,
+        exp = token.get("exp")
+        self.user, created = User.objects.update_or_create(
+            username=f"{self.provider.name}-{token.get('sub')}",
+            defaults={
+                "attributes": {
+                    USER_ATTRIBUTE_GENERATED: True,
                 },
-            )
-            exp = token.get("exp")
-            if created and exp:
-                self.user.attributes[USER_ATTRIBUTE_EXPIRES] = exp
-                self.user.save()
+                "last_login": timezone.now(),
+                "name": f"Autogenerated user from application {app.name} (client credentials JWT)",
+                "path": source.get_user_path(),
+            },
+        )
+        if created and exp:
+            self.user.attributes[USER_ATTRIBUTE_EXPIRES] = exp
+            self.user.save()
 
 
 @method_decorator(csrf_exempt, name="dispatch")
 class TokenView(View):
     """Generate tokens for clients"""
 
-    provider: OAuth2Provider | None = None
-    params: TokenParams | None = None
+    provider: Optional[OAuth2Provider] = None
+    params: Optional[TokenParams] = None
 
     def dispatch(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
         response = super().dispatch(request, *args, **kwargs)
@@ -651,7 +599,7 @@ class TokenView(View):
             "expires_in": int(
                 timedelta_from_string(self.provider.access_token_validity).total_seconds()
             ),
-            "id_token": access_token.id_token.to_jwt(self.provider),
+            "id_token": id_token.to_jwt(self.provider),
         }
 
     def create_client_credentials_response(self) -> dict[str, Any]:

@@ -12,7 +12,7 @@ import AKTokenCopyButton from "./ak-token-copy-button";
 
 function makeid(length: number) {
     const sample = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    return Array.from({ length })
+    return new Array(length)
         .fill(" ")
         .map(() => sample.charAt(Math.floor(Math.random() * sample.length)))
         .join("");

@@ -1,9 +1,5 @@
-import { PFSize } from "@goauthentik/common/enums.js";
 import { AKElement } from "@goauthentik/elements/Base";
-import {
-    ModalHideEvent,
-    ModalShowEvent,
-} from "@goauthentik/elements/controllers/ModalOrchestrationController.js";
+import { PFSize } from "@goauthentik/elements/Spinner";
 
 import { CSSResult, TemplateResult, css, html, nothing } from "lit";
 import { customElement, property } from "lit/decorators.js";
@@ -69,9 +65,22 @@ export class ModalButton extends AKElement {
         ];
     }
 
-    closeModal() {
-        this.resetForms();
-        this.open = false;
+    firstUpdated(): void {
+        if (this.handlerBound) return;
+        window.addEventListener("keyup", this.keyUpHandler);
+        this.handlerBound = true;
+    }
+
+    keyUpHandler = (e: KeyboardEvent): void => {
+        if (e.code === "Escape") {
+            this.resetForms();
+            this.open = false;
+        }
+    };
+
+    disconnectedCallback(): void {
+        super.disconnectedCallback();
+        window.removeEventListener("keyup", this.keyUpHandler);
     }
 
     resetForms(): void {
@@ -84,7 +93,6 @@ export class ModalButton extends AKElement {
 
     onClick(): void {
         this.open = true;
-        this.dispatchEvent(new ModalShowEvent(this));
         this.querySelectorAll("*").forEach((child) => {
             if ("requestUpdate" in child) {
                 (child as AKElement).requestUpdate();
@@ -111,7 +119,8 @@ export class ModalButton extends AKElement {
                 >
                     <button
                         @click=${() => {
-                            this.dispatchEvent(new ModalHideEvent(this));
+                            this.resetForms();
+                            this.open = false;
                         }}
                         class="pf-c-button pf-m-plain"
                         type="button"

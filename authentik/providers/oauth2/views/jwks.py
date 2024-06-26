@@ -1,6 +1,7 @@
 """authentik OAuth2 JWKS Views"""
 
 from base64 import b64encode, urlsafe_b64encode
+from typing import Optional
 
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric.ec import (
@@ -64,7 +65,7 @@ def to_base64url_uint(val: int, min_length: int = 0) -> bytes:
 class JWKSView(View):
     """Show RSA Key data for Provider"""
 
-    def get_jwk_for_key(self, key: CertificateKeyPair) -> dict | None:
+    def get_jwk_for_key(self, key: CertificateKeyPair) -> Optional[dict]:
         """Convert a certificate-key pair into JWK"""
         private_key = key.private_key
         key_data = None

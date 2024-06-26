@@ -1,5 +1,6 @@
 import "@goauthentik/admin/providers/RelatedApplicationButton";
 import "@goauthentik/admin/providers/ldap/LDAPProviderForm";
+import "@goauthentik/app/elements/rbac/ObjectPermissionsPage";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { EVENT_REFRESH } from "@goauthentik/common/constants";
 import { me } from "@goauthentik/common/users";
@@ -9,10 +10,9 @@ import "@goauthentik/elements/CodeMirror";
 import "@goauthentik/elements/Tabs";
 import "@goauthentik/elements/buttons/ModalButton";
 import "@goauthentik/elements/buttons/SpinnerButton";
-import "@goauthentik/elements/rbac/ObjectPermissionsPage";
 
 import { msg } from "@lit/localize";
-import { CSSResult, PropertyValues, TemplateResult, html } from "lit";
+import { CSSResult, TemplateResult, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { ifDefined } from "lit/directives/if-defined.js";
 
@@ -37,10 +37,21 @@ import {
 
 @customElement("ak-provider-ldap-view")
 export class LDAPProviderViewPage extends AKElement {
-    @property({ type: Number })
-    providerID?: number;
+    @property()
+    set args(value: { [key: string]: number }) {
+        this.providerID = value.id;
+    }
 
-    @state()
+    @property({ type: Number })
+    set providerID(value: number) {
+        new ProvidersApi(DEFAULT_CONFIG)
+            .providersLdapRetrieve({
+                id: value,
+            })
+            .then((prov) => (this.provider = prov));
+    }
+
+    @property({ attribute: false })
     provider?: LDAPProvider;
 
     @state()
@@ -71,18 +82,6 @@ export class LDAPProviderViewPage extends AKElement {
         me().then((user) => {
             this.me = user;
         });
-    }
-
-    fetchProvider(id: number) {
-        new ProvidersApi(DEFAULT_CONFIG)
-            .providersLdapRetrieve({ id })
-            .then((prov) => (this.provider = prov));
-    }
-
-    willUpdate(changedProperties: PropertyValues<this>) {
-        if (changedProperties.has("providerID") && this.providerID) {
-            this.fetchProvider(this.providerID);
-        }
     }
 
     render(): TemplateResult {

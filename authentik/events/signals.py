@@ -1,6 +1,6 @@
 """authentik events signal listener"""
 
-from typing import Any
+from typing import Any, Optional
 
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.db.models.signals import post_save, pre_delete
@@ -42,7 +42,7 @@ def on_user_logged_in(sender, request: HttpRequest, user: User, **_):
     request.session[SESSION_LOGIN_EVENT] = event
 
 
-def get_login_event(request: HttpRequest) -> Event | None:
+def get_login_event(request: HttpRequest) -> Optional[Event]:
     """Wrapper to get login event that can be mocked in tests"""
     return request.session.get(SESSION_LOGIN_EVENT, None)
 
@@ -71,7 +71,7 @@ def on_login_failed(
     sender,
     credentials: dict[str, str],
     request: HttpRequest,
-    stage: Stage | None = None,
+    stage: Optional[Stage] = None,
     **kwargs,
 ):
     """Failed Login, authentik custom event"""

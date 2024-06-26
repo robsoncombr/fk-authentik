@@ -166,7 +166,7 @@ export class AkAdminSidebar extends WithCapabilitiesConfig(AKElement) {
             ${this.renderNewVersionMessage()}
             ${this.renderImpersonationMessage()}
             ${map(sidebarContent, renderOneSidebarItem)}
-            ${this.renderEnterpriseMenu()}
+            ${this.renderEnterpriseMessage()}
         `;
     }
 
@@ -199,7 +199,7 @@ export class AkAdminSidebar extends WithCapabilitiesConfig(AKElement) {
             : nothing;
     }
 
-    renderEnterpriseMenu() {
+    renderEnterpriseMessage() {
         return this.can(CapabilitiesEnum.IsEnterprise)
             ? html`
                   <ak-sidebar-item>

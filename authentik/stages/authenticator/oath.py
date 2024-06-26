@@ -6,6 +6,7 @@ from struct import pack
 from time import time
 
 
+# pylint: disable=invalid-name
 def hotp(key: bytes, counter: int, digits=6) -> int:
     """
     Implementation of the HOTP algorithm from `RFC 4226
@@ -128,6 +129,7 @@ class TOTP:
     359152
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(self, key: bytes, step=30, t0=0, digits=6, drift=0):
         self.key = key
         self.step = step

@@ -1,5 +1,6 @@
 import "@goauthentik/admin/providers/RelatedApplicationButton";
 import "@goauthentik/admin/providers/radius/RadiusProviderForm";
+import "@goauthentik/app/elements/rbac/ObjectPermissionsPage";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { EVENT_REFRESH } from "@goauthentik/common/constants";
 import "@goauthentik/components/events/ObjectChangelog";
@@ -8,11 +9,10 @@ import "@goauthentik/elements/CodeMirror";
 import "@goauthentik/elements/Tabs";
 import "@goauthentik/elements/buttons/ModalButton";
 import "@goauthentik/elements/buttons/SpinnerButton";
-import "@goauthentik/elements/rbac/ObjectPermissionsPage";
 
 import { msg } from "@lit/localize";
-import { CSSResult, PropertyValues, TemplateResult, html } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { CSSResult, TemplateResult, html } from "lit";
+import { customElement, property } from "lit/decorators.js";
 
 import PFButton from "@patternfly/patternfly/components/Button/button.css";
 import PFCard from "@patternfly/patternfly/components/Card/card.css";
@@ -32,10 +32,21 @@ import {
 
 @customElement("ak-provider-radius-view")
 export class RadiusProviderViewPage extends AKElement {
-    @property({ type: Number })
-    providerID?: number;
+    @property()
+    set args(value: { [key: string]: number }) {
+        this.providerID = value.id;
+    }
 
-    @state()
+    @property({ type: Number })
+    set providerID(value: number) {
+        new ProvidersApi(DEFAULT_CONFIG)
+            .providersRadiusRetrieve({
+                id: value,
+            })
+            .then((prov) => (this.provider = prov));
+    }
+
+    @property({ attribute: false })
     provider?: RadiusProvider;
 
     static get styles(): CSSResult[] {
@@ -58,18 +69,6 @@ export class RadiusProviderViewPage extends AKElement {
             if (!this.provider?.pk) return;
             this.providerID = this.provider?.pk;
         });
-    }
-
-    fetchProvider(id: number) {
-        new ProvidersApi(DEFAULT_CONFIG)
-            .providersRadiusRetrieve({ id })
-            .then((prov) => (this.provider = prov));
-    }
-
-    willUpdate(changedProperties: PropertyValues<this>) {
-        if (changedProperties.has("providerID") && this.providerID) {
-            this.fetchProvider(this.providerID);
-        }
     }
 
     render(): TemplateResult {

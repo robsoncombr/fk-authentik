@@ -12,15 +12,15 @@ from rest_framework.fields import (
     ChoiceField,
     DateTimeField,
     FloatField,
+    ListField,
     SerializerMethodField,
 )
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from structlog.stdlib import get_logger
 
-from authentik.core.api.utils import ModelSerializer
-from authentik.events.logs import LogEventSerializer
 from authentik.events.models import SystemTask, TaskStatus
 from authentik.rbac.decorators import permission_required
 
@@ -39,7 +39,7 @@ class SystemTaskSerializer(ModelSerializer):
     duration = FloatField(read_only=True)
 
     status = ChoiceField(choices=[(x.value, x.name) for x in TaskStatus])
-    messages = LogEventSerializer(many=True)
+    messages = ListField(child=CharField())
 
     def get_full_name(self, instance: SystemTask) -> str:
         """Get full name with UID"""
@@ -60,8 +60,6 @@ class SystemTaskSerializer(ModelSerializer):
             "duration",
             "status",
             "messages",
-            "expires",
-            "expiring",
         ]
 
 
@@ -94,7 +92,7 @@ class SystemTaskViewSet(ReadOnlyModelViewSet):
             task_func.delay(*task.task_call_args, **task.task_call_kwargs)
             messages.success(
                 self.request,
-                _("Successfully started task {name}.".format_map({"name": task.name})),
+                _("Successfully started task %(name)s." % {"name": task.name}),
             )
             return Response(status=204)
         except (ImportError, AttributeError) as exc:  # pragma: no cover

@@ -69,7 +69,6 @@ export class RuleForm extends ModelForm<NotificationRule, string> {
                     .fetchObjects=${async (query?: string): Promise<Group[]> => {
                         const args: CoreGroupsListRequest = {
                             ordering: "name",
-                            includeUsers: false,
                         };
                         if (query !== undefined) {
                             args.search = query;

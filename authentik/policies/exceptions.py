@@ -1,5 +1,7 @@
 """policy exceptions"""
 
+from typing import Optional
+
 from authentik.lib.sentry import SentryIgnoredException
 
 
@@ -10,8 +12,8 @@ class PolicyEngineException(SentryIgnoredException):
 class PolicyException(SentryIgnoredException):
     """Exception that should be raised during Policy Evaluation, and can be recovered from."""
 
-    src_exc: Exception | None = None
+    src_exc: Optional[Exception] = None
 
-    def __init__(self, src_exc: Exception | None = None) -> None:
+    def __init__(self, src_exc: Optional[Exception] = None) -> None:
         super().__init__()
         self.src_exc = src_exc

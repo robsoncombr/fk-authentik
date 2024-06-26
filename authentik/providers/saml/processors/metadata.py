@@ -1,8 +1,7 @@
 """SAML Identity Provider Metadata Processor"""
 
-from collections.abc import Iterator
 from hashlib import sha256
-from typing import Optional
+from typing import Iterator, Optional
 
 import xmlsec  # nosec
 from django.http import HttpRequest
@@ -32,7 +31,7 @@ class MetadataProcessor:
 
     provider: SAMLProvider
     http_request: HttpRequest
-    force_binding: str | None
+    force_binding: Optional[str]
 
     def __init__(self, provider: SAMLProvider, request: HttpRequest):
         self.provider = provider
@@ -40,8 +39,7 @@ class MetadataProcessor:
         self.force_binding = None
         self.xml_id = "_" + sha256(f"{provider.name}-{provider.pk}".encode("ascii")).hexdigest()
 
-    # Using type unions doesn't work with cython types (which is what lxml is)
-    def get_signing_key_descriptor(self) -> Optional[Element]:  # noqa: UP007
+    def get_signing_key_descriptor(self) -> Optional[Element]:
         """Get Signing KeyDescriptor, if enabled for the provider"""
         if not self.provider.signing_kp:
             return None

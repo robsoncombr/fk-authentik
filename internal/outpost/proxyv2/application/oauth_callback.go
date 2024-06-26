@@ -3,43 +3,22 @@ package application
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"net/url"
-	"time"
 
-	"goauthentik.io/internal/outpost/proxyv2/constants"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 )
 
-func (a *Application) handleAuthCallback(rw http.ResponseWriter, r *http.Request) {
-	state := a.stateFromRequest(r)
-	if state == nil {
-		a.log.Warning("invalid state")
-		a.redirect(rw, r)
-		return
+func (a *Application) redeemCallback(savedState string, u *url.URL, c context.Context) (*Claims, error) {
+	state := u.Query().Get("state")
+	a.log.WithFields(log.Fields{
+		"states":   savedState,
+		"expected": state,
+	}).Trace("tracing states")
+	if savedState != state {
+		return nil, fmt.Errorf("invalid state")
 	}
-	claims, err := a.redeemCallback(r.URL, r.Context())
-	if err != nil {
-		a.log.WithError(err).Warning("failed to redeem code")
-		a.redirect(rw, r)
-		return
-	}
-	s, err := a.sessions.Get(r, a.SessionName())
-	if err != nil {
-		a.log.WithError(err).Trace("failed to get session")
-	}
-	s.Options.MaxAge = int(time.Until(time.Unix(int64(claims.Exp), 0)).Seconds())
-	s.Values[constants.SessionClaims] = &claims
-	err = s.Save(r, rw)
-	if err != nil {
-		a.log.WithError(err).Warning("failed to save session")
-		rw.WriteHeader(400)
-		return
-	}
-	a.redirect(rw, r)
-}
 
-func (a *Application) redeemCallback(u *url.URL, c context.Context) (*Claims, error) {
 	code := u.Query().Get("code")
 	if code == "" {
 		return nil, fmt.Errorf("blank code")

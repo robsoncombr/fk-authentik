@@ -1,5 +1,5 @@
+import { APIErrorTypes, parseAPIError } from "@goauthentik/app/common/errors";
 import { EVENT_REFRESH } from "@goauthentik/common/constants";
-import { APIErrorTypes, parseAPIError } from "@goauthentik/common/errors";
 import { groupBy } from "@goauthentik/common/utils";
 import { AKElement } from "@goauthentik/elements/Base";
 import "@goauthentik/elements/EmptyState";
@@ -131,7 +131,7 @@ export abstract class Table<T> extends AKElement implements TableLike {
     order?: string;
 
     @property({ type: String })
-    search: string = "";
+    search: string = getURLParam("search", "");
 
     @property({ type: Boolean })
     checkbox = false;
@@ -198,9 +198,6 @@ export abstract class Table<T> extends AKElement implements TableLike {
                 this.selectedElements = [];
             }
         });
-        if (this.searchEnabled()) {
-            this.search = getURLParam("search", "");
-        }
     }
 
     public groupBy(items: T[]): [string, T[]][] {

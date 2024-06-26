@@ -132,10 +132,6 @@ Click `Update` and the configuration authentik is done.
 
 #### Configure Gitea to use the new claims
 
-:::note
-Gitea must set `ENABLE_AUTO_REGISTRATION: true`.
-:::
-
 Navigate to the _Authentication Sources_ page at https://gitea.company/admin/auths and edit the **authentik** Authentication Source.
 
 Change the following fields
@@ -168,7 +164,7 @@ gitea:
           provider: "openidConnect"
           key: "CLIENT_ID_FROM_AUTHENTIK" #Step 1
           secret: "CLIENT_SECRET_FROM_AUTHENTIK" #Step 1
-          autoDiscoverUrl: "https://authentik.company/application/o/gitea-slug/.well-known/openid-configuration"
+          autoDiscoveryUrl: "https://authentik.company/application/o/gitea-slug/.well-known/openid-configuration"
           iconUrl: "https://goauthentik.io/img/icon.png"
           scopes: "email profile"
 ```
@@ -198,7 +194,7 @@ gitea:
         - name: "authentik"
           provider: "openidConnect"
           existingSecret: gitea-authentik-secret
-          autoDiscoverUrl: "https://authentik.company/application/o/gitea-slug/.well-known/openid-configuration"
+          autoDiscoveryUrl: "https://authentik.company/application/o/gitea-slug/.well-known/openid-configuration"
           iconUrl: "https://goauthentik.io/img/icon.png"
           scopes: "email profile"
 ```

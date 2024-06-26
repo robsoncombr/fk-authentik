@@ -2,6 +2,7 @@
 
 from binascii import hexlify
 from hashlib import md5
+from typing import Optional
 from uuid import uuid4
 
 from cryptography.hazmat.backends import default_backend
@@ -36,9 +37,9 @@ class CertificateKeyPair(SerializerModel, ManagedModel, CreatedUpdatedModel):
         default="",
     )
 
-    _cert: Certificate | None = None
-    _private_key: PrivateKeyTypes | None = None
-    _public_key: PublicKeyTypes | None = None
+    _cert: Optional[Certificate] = None
+    _private_key: Optional[PrivateKeyTypes] = None
+    _public_key: Optional[PublicKeyTypes] = None
 
     @property
     def serializer(self) -> Serializer:
@@ -56,7 +57,7 @@ class CertificateKeyPair(SerializerModel, ManagedModel, CreatedUpdatedModel):
         return self._cert
 
     @property
-    def public_key(self) -> PublicKeyTypes | None:
+    def public_key(self) -> Optional[PublicKeyTypes]:
         """Get public key of the private key"""
         if not self._public_key:
             self._public_key = self.private_key.public_key()
@@ -65,7 +66,7 @@ class CertificateKeyPair(SerializerModel, ManagedModel, CreatedUpdatedModel):
     @property
     def private_key(
         self,
-    ) -> PrivateKeyTypes | None:
+    ) -> Optional[PrivateKeyTypes]:
         """Get python cryptography PrivateKey instance"""
         if not self._private_key and self.key_data != "":
             try:
@@ -92,11 +93,7 @@ class CertificateKeyPair(SerializerModel, ManagedModel, CreatedUpdatedModel):
     @property
     def kid(self):
         """Get Key ID used for JWKS"""
-        return (
-            md5(self.key_data.encode("utf-8"), usedforsecurity=False).hexdigest()
-            if self.key_data
-            else ""
-        )  # nosec
+        return md5(self.key_data.encode("utf-8")).hexdigest() if self.key_data else ""  # nosec
 
     def __str__(self) -> str:
         return f"Certificate-Key Pair {self.name}"

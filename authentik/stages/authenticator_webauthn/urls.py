@@ -1,15 +1,13 @@
 """API URLs"""
 
-from authentik.stages.authenticator_webauthn.api.device_types import WebAuthnDeviceTypeViewSet
-from authentik.stages.authenticator_webauthn.api.devices import (
+from authentik.stages.authenticator_webauthn.api import (
+    AuthenticateWebAuthnStageViewSet,
     WebAuthnAdminDeviceViewSet,
     WebAuthnDeviceViewSet,
 )
-from authentik.stages.authenticator_webauthn.api.stages import AuthenticatorWebAuthnStageViewSet
 
 api_urlpatterns = [
-    ("stages/authenticator/webauthn", AuthenticatorWebAuthnStageViewSet),
-    ("stages/authenticator/webauthn_device_types", WebAuthnDeviceTypeViewSet),
+    ("stages/authenticator/webauthn", AuthenticateWebAuthnStageViewSet),
     (
         "authenticators/admin/webauthn",
         WebAuthnAdminDeviceViewSet,

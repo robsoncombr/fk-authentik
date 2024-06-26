@@ -37,7 +37,7 @@ class AuthenticatorValidateStageDuoTests(FlowTestCase):
         middleware = SessionMiddleware(dummy_get_response)
         middleware.process_request(request)
         request.session.save()
-        request.brand = get_brand_for_request(request)
+        setattr(request, "brand", get_brand_for_request(request))
 
         stage = AuthenticatorDuoStage.objects.create(
             name=generate_id(),

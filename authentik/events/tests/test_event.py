@@ -105,7 +105,7 @@ class TestEvents(TestCase):
         # Test brand
         request = self.factory.get("/")
         brand = Brand(domain="test-brand")
-        request.brand = brand
+        setattr(request, "brand", brand)
         event = Event.new("unittest").from_http(request)
         self.assertEqual(
             event.brand,

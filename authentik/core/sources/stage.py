@@ -10,7 +10,7 @@ from authentik.flows.stage import StageView
 PLAN_CONTEXT_SOURCES_CONNECTION = "goauthentik.io/sources/connection"
 
 
-class PostSourceStage(StageView):
+class PostUserEnrollmentStage(StageView):
     """Dynamically injected stage which saves the Connection after
     the user has been enrolled."""
 
@@ -21,12 +21,10 @@ class PostSourceStage(StageView):
         ]
         user: User = self.executor.plan.context[PLAN_CONTEXT_PENDING_USER]
         connection.user = user
-        linked = connection.pk is None
         connection.save()
-        if linked:
-            Event.new(
-                EventAction.SOURCE_LINKED,
-                message="Linked Source",
-                source=connection.source,
-            ).from_http(self.request)
+        Event.new(
+            EventAction.SOURCE_LINKED,
+            message="Linked Source",
+            source=connection.source,
+        ).from_http(self.request)
         return self.executor.stage_ok()
