@@ -1,7 +1,7 @@
 """test OAuth2 OpenID Provider flow"""
 
 from time import sleep
-from typing import Any
+from typing import Any, Optional
 
 from docker.types import Healthcheck
 from selenium.webdriver.common.by import By
@@ -33,7 +33,7 @@ class TestProviderOAuth2OAuth(SeleniumTestCase):
         self.app_slug = generate_id(20)
         super().setUp()
 
-    def get_container_specs(self) -> dict[str, Any] | None:
+    def get_container_specs(self) -> Optional[dict[str, Any]]:
         return {
             "image": "grafana/grafana:7.1.0",
             "detach": True,

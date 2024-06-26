@@ -25,17 +25,17 @@ class TestAPIAuth(TestCase):
     def test_invalid_type(self):
         """Test invalid type"""
         with self.assertRaises(AuthenticationFailed):
-            bearer_auth(b"foo bar")
+            bearer_auth("foo bar".encode())
 
     def test_invalid_empty(self):
         """Test invalid type"""
-        self.assertIsNone(bearer_auth(b"Bearer "))
-        self.assertIsNone(bearer_auth(b""))
+        self.assertIsNone(bearer_auth("Bearer ".encode()))
+        self.assertIsNone(bearer_auth("".encode()))
 
     def test_invalid_no_token(self):
         """Test invalid with no token"""
         with self.assertRaises(AuthenticationFailed):
-            auth = b64encode(b":abc").decode()
+            auth = b64encode(":abc".encode()).decode()
             self.assertIsNone(bearer_auth(f"Basic :{auth}".encode()))
 
     def test_bearer_valid(self):

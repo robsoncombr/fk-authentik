@@ -8,6 +8,7 @@ from rest_framework.test import APITestCase
 
 from authentik.core.models import User
 from authentik.core.tests.utils import create_test_admin_user
+from authentik.lib.config import CONFIG
 from authentik.tenants.utils import get_current_tenant
 
 
@@ -24,6 +25,7 @@ class TestUsersAvatars(APITestCase):
         tenant.avatars = mode
         tenant.save()
 
+    @CONFIG.patch("avatars", "none")
     def test_avatars_none(self):
         """Test avatars none"""
         self.set_avatar_mode("none")
@@ -42,8 +44,8 @@ class TestUsersAvatars(APITestCase):
         with Mocker() as mocker:
             mocker.head(
                 (
-                    "https://www.gravatar.com/avatar/76eb3c74c8beb6faa037f1b6e2ecb3e252bdac"
-                    "6cf71fb567ae36025a9d4ea86b?size=158&rating=g&default=404"
+                    "https://secure.gravatar.com/avatar/84730f9c1851d1ea03f1a"
+                    "a9ed85bd1ea?size=158&rating=g&default=404"
                 ),
                 text="foo",
             )

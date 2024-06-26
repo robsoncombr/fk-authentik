@@ -100,10 +100,6 @@ def get_logger_config():
         "fsevents": "WARNING",
         "uvicorn": "WARNING",
         "gunicorn": "INFO",
-        "requests_mock": "WARNING",
-        "hpack": "WARNING",
-        "httpx": "WARNING",
-        "azure": "WARNING",
     }
     for handler_name, level in handler_level_map.items():
         base_config["loggers"][handler_name] = {

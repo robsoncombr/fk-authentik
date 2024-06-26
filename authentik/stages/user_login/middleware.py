@@ -23,7 +23,8 @@ LOGGER = get_logger()
 class SessionBindingBroken(SentryIgnoredException):
     """Session binding was broken due to specified `reason`"""
 
-    def __init__(  # noqa: PLR0913
+    # pylint: disable=too-many-arguments
+    def __init__(
         self, reason: str, old_value: str, new_value: str, old_ip: str, new_ip: str
     ) -> None:
         self.reason = reason
@@ -148,8 +149,8 @@ class BoundSessionMiddleware(SessionMiddleware):
             if last_asn.network != new_asn.network:
                 raise SessionBindingBroken(
                     "network.asn_network",
-                    str(last_asn.network),
-                    str(new_asn.network),
+                    last_asn.network,
+                    new_asn.network,
                     last_ip,
                     new_ip,
                 )

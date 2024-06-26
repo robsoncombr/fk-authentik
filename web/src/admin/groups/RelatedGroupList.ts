@@ -105,7 +105,6 @@ export class RelatedGroupList extends Table<Group> {
             pageSize: (await uiConfig()).pagination.perPage,
             search: this.search || "",
             membersByPk: this.targetUser ? [this.targetUser.pk] : [],
-            includeUsers: false,
         });
     }
 

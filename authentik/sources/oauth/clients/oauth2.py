@@ -1,7 +1,7 @@
 """OAuth 2 Clients"""
 
 from json import loads
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import parse_qsl
 
 from django.utils.crypto import constant_time_compare, get_random_string
@@ -23,7 +23,7 @@ class OAuth2Client(BaseOAuthClient):
         "Accept": "application/json",
     }
 
-    def get_request_arg(self, key: str, default: Any | None = None) -> Any:
+    def get_request_arg(self, key: str, default: Optional[Any] = None) -> Any:
         """Depending on request type, get data from post or get"""
         if self.request.method == "POST":
             return self.request.POST.get(key, default)
@@ -55,7 +55,7 @@ class OAuth2Client(BaseOAuthClient):
         """Get client secret"""
         return self.source.consumer_secret
 
-    def get_access_token(self, **request_kwargs) -> dict[str, Any] | None:
+    def get_access_token(self, **request_kwargs) -> Optional[dict[str, Any]]:
         """Fetch access token from callback request."""
         callback = self.request.build_absolute_uri(self.callback or self.request.path)
         if not self.check_application_state():
@@ -80,7 +80,7 @@ class OAuth2Client(BaseOAuthClient):
             access_token_url = self.source.source_type.access_token_url or ""
             if self.source.source_type.urls_customizable and self.source.access_token_url:
                 access_token_url = self.source.access_token_url
-            response = self.do_request(
+            response = self.session.request(
                 "post", access_token_url, data=args, headers=self._default_headers, **request_kwargs
             )
             response.raise_for_status()
@@ -139,7 +139,7 @@ class OAuth2Client(BaseOAuthClient):
 class UserprofileHeaderAuthClient(OAuth2Client):
     """OAuth client which only sends authentication via header, not querystring"""
 
-    def get_profile_info(self, token: dict[str, str]) -> dict[str, Any] | None:
+    def get_profile_info(self, token: dict[str, str]) -> Optional[dict[str, Any]]:
         "Fetch user profile information."
         profile_url = self.source.source_type.profile_url or ""
         if self.source.source_type.urls_customizable and self.source.profile_url:

@@ -1,6 +1,6 @@
 """stage view tests"""
 
-from collections.abc import Callable
+from typing import Callable
 
 from django.test import RequestFactory, TestCase
 

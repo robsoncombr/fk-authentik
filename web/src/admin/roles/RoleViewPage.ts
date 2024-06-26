@@ -1,5 +1,6 @@
 import "@goauthentik/admin/groups/RelatedGroupList";
 import "@goauthentik/admin/roles/RoleForm";
+import "@goauthentik/app/elements/rbac/ObjectPermissionsPage";
 import { DEFAULT_CONFIG } from "@goauthentik/common/api/config";
 import { EVENT_REFRESH } from "@goauthentik/common/constants";
 import { renderDescriptionList } from "@goauthentik/components/DescriptionList";
@@ -9,7 +10,6 @@ import { AKElement } from "@goauthentik/elements/Base";
 import "@goauthentik/elements/PageHeader";
 import "@goauthentik/elements/Tabs";
 import "@goauthentik/elements/forms/ModalForm";
-import "@goauthentik/elements/rbac/ObjectPermissionsPage";
 
 import { msg, str } from "@lit/localize";
 import { css, html, nothing } from "lit";

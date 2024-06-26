@@ -14,16 +14,14 @@ class AuthentikCoreConfig(ManagedAppConfig):
     mountpoint = ""
     default = True
 
-    @ManagedAppConfig.reconcile_global
-    def debug_worker_hook(self):
+    def reconcile_global_debug_worker_hook(self):
         """Dispatch startup tasks inline when debugging"""
         if settings.DEBUG:
             from authentik.root.celery import worker_ready_hook
 
             worker_ready_hook()
 
-    @ManagedAppConfig.reconcile_tenant
-    def source_inbuilt(self):
+    def reconcile_tenant_source_inbuilt(self):
         """Reconcile inbuilt source"""
         from authentik.core.models import Source
 

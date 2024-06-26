@@ -8,7 +8,7 @@ from authentik.core.models import Application, Group, User
 from authentik.lib.generators import generate_id
 from authentik.providers.scim.clients.schema import ServiceProviderConfiguration
 from authentik.providers.scim.models import SCIMMapping, SCIMProvider
-from authentik.providers.scim.tasks import scim_sync, sync_tasks
+from authentik.providers.scim.tasks import scim_sync
 from authentik.tenants.models import Tenant
 
 
@@ -49,7 +49,7 @@ class SCIMMembershipTests(TestCase):
     def test_member_add(self):
         """Test member add"""
         config = ServiceProviderConfiguration.default()
-
+        # pylint: disable=assigning-non-slot
         config.patch.supported = True
         user_scim_id = generate_id()
         group_scim_id = generate_id()
@@ -79,7 +79,7 @@ class SCIMMembershipTests(TestCase):
             )
 
             self.configure()
-            sync_tasks.trigger_single_task(self.provider, scim_sync).get()
+            scim_sync.delay(self.provider.pk).get()
 
             self.assertEqual(mocker.call_count, 6)
             self.assertEqual(mocker.request_history[0].method, "GET")
@@ -139,7 +139,7 @@ class SCIMMembershipTests(TestCase):
     def test_member_remove(self):
         """Test member remove"""
         config = ServiceProviderConfiguration.default()
-
+        # pylint: disable=assigning-non-slot
         config.patch.supported = True
         user_scim_id = generate_id()
         group_scim_id = generate_id()
@@ -169,7 +169,7 @@ class SCIMMembershipTests(TestCase):
             )
 
             self.configure()
-            sync_tasks.trigger_single_task(self.provider, scim_sync).get()
+            scim_sync.delay(self.provider.pk).get()
 
             self.assertEqual(mocker.call_count, 6)
             self.assertEqual(mocker.request_history[0].method, "GET")

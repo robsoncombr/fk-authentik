@@ -2,10 +2,9 @@
 
 from dataclasses import asdict
 from json import dumps
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, Optional, TypeVar
 
 from dacite.core import from_dict
-from django.http import HttpResponseNotFound
 from django.utils.text import slugify
 from jsonpatch import JsonPatchConflict, JsonPatchException, JsonPatchTestFailed, apply_patch
 from kubernetes.client import ApiClient, V1ObjectMeta
@@ -101,6 +100,7 @@ class KubernetesObjectReconciler(Generic[T]):
 
         return result
 
+    # pylint: disable=invalid-name
     def up(self):
         """Create object if it doesn't exist, update if needed or recreate if needed."""
         current = None
@@ -112,8 +112,8 @@ class KubernetesObjectReconciler(Generic[T]):
             try:
                 current = self.retrieve()
             except (OpenApiException, HTTPError) as exc:
-
-                if isinstance(exc, ApiException) and exc.status == HttpResponseNotFound.status_code:
+                # pylint: disable=no-member
+                if isinstance(exc, ApiException) and exc.status == 404:
                     self.logger.debug("Failed to get current, triggering recreate")
                     raise NeedsRecreate from exc
                 self.logger.debug("Other unhandled error", exc=exc)
@@ -124,7 +124,8 @@ class KubernetesObjectReconciler(Generic[T]):
                 self.update(current, reference)
                 self.logger.debug("Updating")
             except (OpenApiException, HTTPError) as exc:
-                if isinstance(exc, ApiException) and exc.status == 422:  # noqa: PLR2004
+                # pylint: disable=no-member
+                if isinstance(exc, ApiException) and exc.status == 422:
                     self.logger.debug("Failed to update current, triggering re-create")
                     self._recreate(current=current, reference=reference)
                     return
@@ -135,7 +136,7 @@ class KubernetesObjectReconciler(Generic[T]):
         else:
             self.logger.debug("Object is up-to-date.")
 
-    def _recreate(self, reference: T, current: T | None = None):
+    def _recreate(self, reference: T, current: Optional[T] = None):
         """Recreate object"""
         self.logger.debug("Recreate requested")
         if current:
@@ -156,8 +157,8 @@ class KubernetesObjectReconciler(Generic[T]):
             self.delete(current)
             self.logger.debug("Removing")
         except (OpenApiException, HTTPError) as exc:
-
-            if isinstance(exc, ApiException) and exc.status == HttpResponseNotFound.status_code:
+            # pylint: disable=no-member
+            if isinstance(exc, ApiException) and exc.status == 404:
                 self.logger.debug("Failed to get current, assuming non-existent")
                 return
             self.logger.debug("Other unhandled error", exc=exc)

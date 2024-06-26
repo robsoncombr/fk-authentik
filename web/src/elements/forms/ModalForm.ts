@@ -2,7 +2,6 @@ import { EVENT_REFRESH } from "@goauthentik/common/constants";
 import "@goauthentik/elements/LoadingOverlay";
 import { ModalButton } from "@goauthentik/elements/buttons/ModalButton";
 import "@goauthentik/elements/buttons/SpinnerButton";
-import { ModalHideEvent } from "@goauthentik/elements/controllers/ModalOrchestrationController.js";
 import { Form } from "@goauthentik/elements/forms/Form";
 
 import { msg } from "@lit/localize";
@@ -93,7 +92,8 @@ export class ModalForm extends ModalButton {
                     : html``}
                 <ak-spinner-button
                     .callAction=${async () => {
-                        this.dispatchEvent(new ModalHideEvent(this));
+                        this.resetForms();
+                        this.open = false;
                     }}
                     class="pf-m-secondary"
                 >

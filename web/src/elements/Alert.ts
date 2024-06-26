@@ -17,8 +17,6 @@ export enum Level {
 export class Alert extends AKElement {
     @property({ type: Boolean })
     inline = false;
-    @property({ type: Boolean })
-    plain = false;
 
     @property()
     level: Level = Level.Warning;
@@ -28,11 +26,7 @@ export class Alert extends AKElement {
     }
 
     render(): TemplateResult {
-        return html`<div
-            class="pf-c-alert ${this.inline ? "pf-m-inline" : ""} ${this.plain
-                ? "pf-m-plain"
-                : ""} ${this.level}"
-        >
+        return html`<div class="pf-c-alert ${this.inline ? "pf-m-inline" : ""} ${this.level}">
             <div class="pf-c-alert__icon">
                 <i class="fas fa-exclamation-circle"></i>
             </div>

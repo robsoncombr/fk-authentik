@@ -1,10 +1,4 @@
 ```
-# Upgrade WebSocket if requested, otherwise use keepalive
-map $http_upgrade $connection_upgrade_keepalive {
-    default upgrade;
-    ''      '';
-}
-
 server {
     # SSL and VHost configuration
     listen                  443 ssl http2;
@@ -24,9 +18,6 @@ server {
         # proxy_pass http://localhost:5000;
         # proxy_set_header Host $host;
         # proxy_set_header ...
-        # Support for websocket
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection $connection_upgrade_keepalive;
 
         ##############################
         # authentik-specific config
@@ -52,7 +43,7 @@ server {
 
     # all requests to /outpost.goauthentik.io must be accessible without authentication
     location /outpost.goauthentik.io {
-        proxy_pass              http://outpost.company:9000;
+        proxy_pass              http://outpost.company:9000/outpost.goauthentik.io;
         # ensure the host of this vserver matches your external URL you've configured
         # in authentik
         proxy_set_header        Host $host;

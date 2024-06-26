@@ -27,7 +27,7 @@ Starting in 2021.9, you can also select a Notification mapping. This allows you 
 
 ```python
 return {
-    "foo": request.context['notification'].body,
+    "foo": context['notification'].body,
 }
 ```
 

@@ -46,7 +46,7 @@ class ASNContextProcessor(MMDBContextProcessor):
             "asn": self.asn_dict(ClientIPMiddleware.get_client_ip(request)),
         }
 
-    def asn(self, ip_address: str) -> ASN | None:
+    def asn(self, ip_address: str) -> Optional[ASN]:
         """Wrapper for Reader.asn"""
         with Hub.current.start_span(
             op="authentik.events.asn.asn",
@@ -71,7 +71,7 @@ class ASNContextProcessor(MMDBContextProcessor):
         }
         return asn_dict
 
-    def asn_dict(self, ip_address: str) -> ASNDict | None:
+    def asn_dict(self, ip_address: str) -> Optional[ASNDict]:
         """Wrapper for self.asn that returns a dict"""
         asn = self.asn(ip_address)
         if not asn:

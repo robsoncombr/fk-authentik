@@ -7,6 +7,7 @@ function log {
 
 function wait_for_db {
     python -m lifecycle.wait_for_db
+    python -m lifecycle.migrate
     log "Bootstrap completed"
 }
 
@@ -54,7 +55,8 @@ function cleanup {
 }
 
 function prepare_debug {
-    VIRTUAL_ENV=/ak-root/venv poetry install --no-ansi --no-interaction
+    source ${VENV_PATH}/bin/activate
+    poetry install --no-ansi --no-interaction
     touch /unittest.xml
     chown authentik:authentik /unittest.xml
 }
@@ -64,6 +66,7 @@ if [[ "${AUTHENTIK_REMOTE_DEBUG}" == "true" ]]; then
 fi
 
 if [[ "$1" == "server" ]]; then
+    wait_for_db
     set_mode "server"
     # If we have bootstrap credentials set, run bootstrap tasks outside of main server
     # sync, so that we can sure the first start actually has working bootstrap
@@ -73,6 +76,7 @@ if [[ "$1" == "server" ]]; then
     fi
     run_authentik
 elif [[ "$1" == "worker" ]]; then
+    wait_for_db
     set_mode "worker"
     check_if_root "python -m manage worker"
 elif [[ "$1" == "worker-status" ]]; then
@@ -84,7 +88,6 @@ elif [[ "$1" == "bash" ]]; then
 elif [[ "$1" == "test-all" ]]; then
     prepare_debug
     chmod 777 /root
-    pip install --force-reinstall /wheels/*
     check_if_root "python -m manage test authentik"
 elif [[ "$1" == "healthcheck" ]]; then
     run_authentik healthcheck $(cat $MODE_FILE)

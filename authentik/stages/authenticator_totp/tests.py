@@ -46,6 +46,7 @@ class TOTPDeviceMixin:
         784503,
     ]
 
+    # pylint: disable=invalid-name
     def setUp(self):
         """
         Create a device at the fourth time step. The current token is 154567.

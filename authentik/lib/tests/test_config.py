@@ -59,7 +59,7 @@ class TestConfig(TestCase):
         """Test URI parsing (file load)"""
         config = ConfigLoader()
         file, file_name = mkstemp()
-        write(file, b"foo")
+        write(file, "foo".encode())
         _, file2_name = mkstemp()
         chmod(file2_name, 0o000)  # Remove all permissions so we can't read the file
         self.assertEqual(config.parse_uri(f"file://{file_name}").value, "foo")
@@ -70,12 +70,12 @@ class TestConfig(TestCase):
     def test_uri_file_update(self):
         """Test URI parsing (file load and update)"""
         file, file_name = mkstemp()
-        write(file, b"foo")
+        write(file, "foo".encode())
         config = ConfigLoader(file_test=f"file://{file_name}")
         self.assertEqual(config.get("file_test"), "foo")
 
         # Update config file
-        write(file, b"bar")
+        write(file, "bar".encode())
         config.refresh("file_test")
         self.assertEqual(config.get("file_test"), "foobar")
 
@@ -91,9 +91,9 @@ class TestConfig(TestCase):
         """Test update_from_file"""
         config = ConfigLoader()
         file, file_name = mkstemp()
-        write(file, b"{")
+        write(file, "{".encode())
         file2, file2_name = mkstemp()
-        write(file2, b"{")
+        write(file2, "{".encode())
         chmod(file2_name, 0o000)  # Remove all permissions so we can't read the file
         with self.assertRaises(ImproperlyConfigured):
             config.update_from_file(file_name)
@@ -116,7 +116,7 @@ class TestConfig(TestCase):
     def test_get_dict_from_b64_json(self):
         """Test get_dict_from_b64_json"""
         config = ConfigLoader()
-        test_value = b'  { "foo": "bar"   }   '
+        test_value = '  { "foo": "bar"   }   '.encode("utf-8")
         b64_value = base64.b64encode(test_value)
         config.set("foo", b64_value)
         self.assertEqual(config.get_dict_from_b64_json("foo"), {"foo": "bar"})
@@ -124,7 +124,7 @@ class TestConfig(TestCase):
     def test_get_dict_from_b64_json_missing_brackets(self):
         """Test get_dict_from_b64_json with missing brackets"""
         config = ConfigLoader()
-        test_value = b' "foo": "bar"     '
+        test_value = ' "foo": "bar"     '.encode("utf-8")
         b64_value = base64.b64encode(test_value)
         config.set("foo", b64_value)
         self.assertEqual(config.get_dict_from_b64_json("foo"), {"foo": "bar"})
@@ -169,9 +169,3 @@ class TestConfig(TestCase):
         self.assertEqual(config.get("cache.timeout_flows"), "32m")
         self.assertEqual(config.get("cache.timeout_policies"), "3920ns")
         self.assertEqual(config.get("cache.timeout_reputation"), "298382us")
-
-    def test_get_keys(self):
-        """Test get_keys"""
-        config = ConfigLoader()
-        config.set("foo.bar", "baz")
-        self.assertEqual(list(config.get_keys("foo")), ["bar"])

@@ -5,7 +5,6 @@ from django.db import migrations, models
 from django.db.backends.base.schema import BaseDatabaseSchemaEditor
 
 import authentik.core.models
-from authentik.lib.generators import generate_id
 
 
 def set_default_token_key(apps: Apps, schema_editor: BaseDatabaseSchemaEditor):
@@ -15,10 +14,6 @@ def set_default_token_key(apps: Apps, schema_editor: BaseDatabaseSchemaEditor):
     for token in Token.objects.using(db_alias).all():
         token.key = token.pk.hex
         token.save()
-
-
-def default_token_key():
-    return generate_id(60)
 
 
 class Migration(migrations.Migration):
@@ -67,7 +62,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="token",
             name="key",
-            field=models.TextField(default=default_token_key),
+            field=models.TextField(default=authentik.core.models.default_token_key),
         ),
         migrations.AlterUniqueTogether(
             name="token",

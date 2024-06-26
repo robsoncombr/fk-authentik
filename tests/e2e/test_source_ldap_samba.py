@@ -1,6 +1,6 @@
 """test LDAP Source"""
 
-from typing import Any
+from typing import Any, Optional
 
 from django.db.models import Q
 from ldap3.core.exceptions import LDAPSessionTerminatedByServerError
@@ -23,7 +23,7 @@ class TestSourceLDAPSamba(SeleniumTestCase):
         self.admin_password = generate_key()
         super().setUp()
 
-    def get_container_specs(self) -> dict[str, Any] | None:
+    def get_container_specs(self) -> Optional[dict[str, Any]]:
         return {
             "image": "ghcr.io/beryju/test-samba-dc:latest",
             "detach": True,
@@ -128,7 +128,6 @@ class TestSourceLDAPSamba(SeleniumTestCase):
             base_dn="dc=test,dc=goauthentik,dc=io",
             additional_user_dn="ou=users",
             additional_group_dn="ou=groups",
-            password_login_update_internal_password=True,
         )
         source.property_mappings.set(
             LDAPPropertyMapping.objects.filter(

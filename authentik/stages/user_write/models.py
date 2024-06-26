@@ -55,7 +55,7 @@ class UserWriteStage(Stage):
         return UserWriteStageSerializer
 
     @property
-    def view(self) -> type[View]:
+    def type(self) -> type[View]:
         from authentik.stages.user_write.stage import UserWriteStageView
 
         return UserWriteStageView

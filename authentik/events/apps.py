@@ -35,8 +35,7 @@ class AuthentikEventsConfig(ManagedAppConfig):
     verbose_name = "authentik Events"
     default = True
 
-    @ManagedAppConfig.reconcile_global
-    def check_deprecations(self):
+    def reconcile_global_check_deprecations(self):
         """Check for config deprecations"""
         from authentik.events.models import Event, EventAction
 
@@ -57,8 +56,7 @@ class AuthentikEventsConfig(ManagedAppConfig):
                 message=msg,
             ).save()
 
-    @ManagedAppConfig.reconcile_tenant
-    def prefill_tasks(self):
+    def reconcile_tenant_prefill_tasks(self):
         """Prefill tasks"""
         from authentik.events.models import SystemTask
         from authentik.events.system_tasks import _prefill_tasks
@@ -69,8 +67,7 @@ class AuthentikEventsConfig(ManagedAppConfig):
             task.save()
             self.logger.debug("prefilled task", task_name=task.name)
 
-    @ManagedAppConfig.reconcile_tenant
-    def run_scheduled_tasks(self):
+    def reconcile_tenant_run_scheduled_tasks(self):
         """Run schedule tasks which are behind schedule (only applies
         to tasks of which we keep metrics)"""
         from authentik.events.models import TaskStatus

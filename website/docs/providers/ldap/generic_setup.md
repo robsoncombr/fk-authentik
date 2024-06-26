@@ -74,17 +74,18 @@ Test connectivity by using ldapsearch.
 :::info
 ldapsearch can be installed on Linux system with these commands
 
-```shell
+```
 sudo apt-get install ldap-utils -y # Debian-based systems
 sudo yum install openldap-clients -y # CentOS-based systems
 ```
 
 :::
 
-```shell
+```
 ldapsearch \
   -x \
-  -H ldap://<LDAP Outpost IP address>:<Port number 389> \ # In production it is recommended to use SSL, which also requires `ldaps://` as the protocol and the SSL port
+  -h <LDAP Outpost IP address> \
+  -p 389 \ # Production should use SSL 636
   -D 'cn=ldapservice,ou=users,DC=ldap,DC=goauthentik,DC=io' \
   -w '<ldapuserpassword>' \
   -b 'DC=ldap,DC=goauthentik,DC=io' \

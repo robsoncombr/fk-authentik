@@ -7,10 +7,9 @@ from django.db.backends.base.schema import BaseDatabaseSchemaEditor
 
 
 def backport_is_backchannel(apps: Apps, schema_editor: BaseDatabaseSchemaEditor):
-    from authentik.providers.ldap.models import LDAPProvider
-    from authentik.providers.scim.models import SCIMProvider
+    from authentik.core.models import BackchannelProvider
 
-    for model in [LDAPProvider, SCIMProvider]:
+    for model in BackchannelProvider.__subclasses__():
         try:
             for obj in model.objects.only("is_backchannel"):
                 obj.is_backchannel = True

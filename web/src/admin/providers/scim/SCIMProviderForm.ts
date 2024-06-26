@@ -42,7 +42,7 @@ export class SCIMProviderFormPage extends BaseProviderForm<SCIMProvider> {
     async send(data: SCIMProvider): Promise<SCIMProvider> {
         if (this.instance) {
             return new ProvidersApi(DEFAULT_CONFIG).providersScimUpdate({
-                id: this.instance.pk,
+                id: this.instance.pk || 0,
                 sCIMProviderRequest: data,
             });
         } else {
@@ -119,7 +119,6 @@ export class SCIMProviderFormPage extends BaseProviderForm<SCIMProvider> {
                             .fetchObjects=${async (query?: string): Promise<Group[]> => {
                                 const args: CoreGroupsListRequest = {
                                     ordering: "name",
-                                    includeUsers: false,
                                 };
                                 if (query !== undefined) {
                                     args.search = query;

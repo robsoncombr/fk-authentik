@@ -22,7 +22,7 @@ class DummyStage(Stage):
         return DummyStageSerializer
 
     @property
-    def view(self) -> type[View]:
+    def type(self) -> type[View]:
         from authentik.stages.dummy.stage import DummyStageView
 
         return DummyStageView

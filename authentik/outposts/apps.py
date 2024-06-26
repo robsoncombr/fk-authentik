@@ -30,8 +30,7 @@ class AuthentikOutpostConfig(ManagedAppConfig):
     verbose_name = "authentik Outpost"
     default = True
 
-    @ManagedAppConfig.reconcile_tenant
-    def embedded_outpost(self):
+    def reconcile_tenant_embedded_outpost(self):
         """Ensure embedded outpost"""
         from authentik.outposts.models import (
             DockerServiceConnection,
@@ -45,14 +44,14 @@ class AuthentikOutpostConfig(ManagedAppConfig):
                 outpost.managed = MANAGED_OUTPOST
                 outpost.save()
                 return
-            outpost, created = Outpost.objects.update_or_create(
+            outpost, updated = Outpost.objects.update_or_create(
                 defaults={
                     "type": OutpostType.PROXY,
                     "name": MANAGED_OUTPOST_NAME,
                 },
                 managed=MANAGED_OUTPOST,
             )
-            if created:
+            if updated:
                 if KubernetesServiceConnection.objects.exists():
                     outpost.service_connection = KubernetesServiceConnection.objects.first()
                 elif DockerServiceConnection.objects.exists():

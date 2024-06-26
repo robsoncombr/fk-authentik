@@ -1,6 +1,6 @@
 """OAuth 1 Clients"""
 
-from typing import Any
+from typing import Any, Optional
 from urllib.parse import parse_qsl
 
 from requests.exceptions import RequestException
@@ -21,7 +21,7 @@ class OAuthClient(BaseOAuthClient):
         "Accept": "application/json",
     }
 
-    def get_access_token(self, **request_kwargs) -> dict[str, Any] | None:
+    def get_access_token(self, **request_kwargs) -> Optional[dict[str, Any]]:
         """Fetch access token from callback request."""
         raw_token = self.request.session.get(self.session_key, None)
         verifier = self.request.GET.get("oauth_verifier", None)

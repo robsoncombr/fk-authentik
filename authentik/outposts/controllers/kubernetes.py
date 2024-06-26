@@ -9,10 +9,10 @@ from kubernetes.client.exceptions import OpenApiException
 from kubernetes.config.config_exception import ConfigException
 from kubernetes.config.incluster_config import load_incluster_config
 from kubernetes.config.kube_config import load_kube_config_from_dict
+from structlog.testing import capture_logs
 from urllib3.exceptions import HTTPError
 from yaml import dump_all
 
-from authentik.events.logs import LogEvent, capture_logs
 from authentik.outposts.controllers.base import BaseClient, BaseController, ControllerException
 from authentik.outposts.controllers.k8s.base import KubernetesObjectReconciler
 from authentik.outposts.controllers.k8s.deployment import DeploymentReconciler
@@ -91,7 +91,7 @@ class KubernetesController(BaseController):
         except (OpenApiException, HTTPError, ServiceConnectionInvalid) as exc:
             raise ControllerException(str(exc)) from exc
 
-    def up_with_logs(self) -> list[LogEvent]:
+    def up_with_logs(self) -> list[str]:
         try:
             all_logs = []
             for reconcile_key in self.reconcile_order:
@@ -104,9 +104,7 @@ class KubernetesController(BaseController):
                         continue
                     reconciler = reconciler_cls(self)
                     reconciler.up()
-                for log in logs:
-                    log.logger = reconcile_key.title()
-                all_logs.extend(logs)
+                all_logs += [f"{reconcile_key.title()}: {x['event']}" for x in logs]
             return all_logs
         except (OpenApiException, HTTPError, ServiceConnectionInvalid) as exc:
             raise ControllerException(str(exc)) from exc
@@ -124,7 +122,7 @@ class KubernetesController(BaseController):
         except (OpenApiException, HTTPError, ServiceConnectionInvalid) as exc:
             raise ControllerException(str(exc)) from exc
 
-    def down_with_logs(self) -> list[LogEvent]:
+    def down_with_logs(self) -> list[str]:
         try:
             all_logs = []
             for reconcile_key in self.reconcile_order:
@@ -137,9 +135,7 @@ class KubernetesController(BaseController):
                         continue
                     reconciler = reconciler_cls(self)
                     reconciler.down()
-                for log in logs:
-                    log.logger = reconcile_key.title()
-                all_logs.extend(logs)
+                all_logs += [f"{reconcile_key.title()}: {x['event']}" for x in logs]
             return all_logs
         except (OpenApiException, HTTPError, ServiceConnectionInvalid) as exc:
             raise ControllerException(str(exc)) from exc

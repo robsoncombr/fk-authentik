@@ -12,13 +12,6 @@ on:
       - version-*
 
 jobs:
-  lint-lockfile:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - working-directory: website/
-        run: |
-          [ -z "$(jq -r '.packages | to_entries[] | select((.key | startswith("node_modules")) and (.value | has("resolved") | not)) | .key' < package-lock.json)" ]
   lint-prettier:
     runs-on: ubuntu-latest
     steps:
@@ -55,6 +48,7 @@ jobs:
       matrix:
         job:
           - build
+          - build-docs-only
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -69,7 +63,6 @@ jobs:
         run: npm run ${{ matrix.job }}
   ci-website-mark:
     needs:
-      - lint-lockfile
       - lint-prettier
       - test
       - build

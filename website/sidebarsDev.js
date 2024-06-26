@@ -1,7 +1,6 @@
 const docsSidebar = require("./sidebars.js");
 const generateVersionDropdown =
     require("./src/utils.js").generateVersionDropdown;
-const apiReference = require("./developer-docs/api/reference/sidebar");
 
 module.exports = {
     docs: [
@@ -47,12 +46,7 @@ module.exports = {
                 "api/flow-executor",
                 "api/making-schema-changes",
                 "api/websocket",
-                {
-                    type: "category",
-                    label: "Reference",
-                    items: apiReference,
-                },
-                "api/clients",
+                "api/browser",
             ],
         },
         {
@@ -76,7 +70,6 @@ module.exports = {
                 id: "docs/writing-documentation",
             },
             items: [
-                "docs/style-guide",
                 {
                     type: "category",
                     label: "Templates",
@@ -88,7 +81,6 @@ module.exports = {
                         "docs/templates/procedural",
                         "docs/templates/conceptual",
                         "docs/templates/reference",
-                        "docs/templates/combo",
                     ],
                 },
             ],

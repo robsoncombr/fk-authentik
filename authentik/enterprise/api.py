@@ -13,15 +13,16 @@ from rest_framework.fields import CharField, IntegerField
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer
 from rest_framework.viewsets import ModelViewSet
 
 from authentik.core.api.used_by import UsedByMixin
-from authentik.core.api.utils import ModelSerializer, PassiveSerializer
+from authentik.core.api.utils import PassiveSerializer
 from authentik.core.models import User, UserTypes
 from authentik.enterprise.license import LicenseKey, LicenseSummarySerializer
 from authentik.enterprise.models import License
 from authentik.rbac.decorators import permission_required
-from authentik.tenants.utils import get_unique_identifier
+from authentik.root.install_id import get_install_id
 
 
 class EnterpriseRequiredMixin:
@@ -91,7 +92,7 @@ class LicenseViewSet(UsedByMixin, ModelViewSet):
         """Get install_id"""
         return Response(
             data={
-                "install_id": get_unique_identifier(),
+                "install_id": get_install_id(),
             }
         )
 

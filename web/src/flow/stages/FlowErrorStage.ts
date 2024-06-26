@@ -46,26 +46,22 @@ export class FlowErrorStage extends BaseStage<FlowErrorChallenge, FlowChallengeR
             </header>
             <div class="pf-c-login__main-body">
                 <form class="pf-c-form">
-                    <ak-empty-state
-                        icon="fa-times"
-                        header=${this.challenge.error
+                    <h3 class="pf-c-title pf-m-3xl">
+                        ${this.challenge?.error
                             ? this.challenge.error
                             : msg("Something went wrong! Please try again later.")}
-                    >
-                        <div slot="body">
-                            ${this.challenge?.traceback
-                                ? html`<div class="pf-c-form__group">
-                                      <pre class="ak-exception">${this.challenge.traceback}</pre>
-                                  </div>`
-                                : html``}
-                            ${this.challenge?.requestId
-                                ? html`<div class="pf-c-form__group">
-                                      <p>${msg("Request ID")}</p>
-                                      <code>${this.challenge.requestId}</code>
-                                  </div>`
-                                : html``}
-                        </div>
-                    </ak-empty-state>
+                    </h3>
+                    ${this.challenge?.traceback
+                        ? html`<div class="pf-c-form__group">
+                              <pre class="ak-exception">${this.challenge.traceback}</pre>
+                          </div>`
+                        : html``}
+                    ${this.challenge?.requestId
+                        ? html`<div class="pf-c-form__group">
+                              <p>${msg("Request ID")}</p>
+                              <code>${this.challenge.requestId}</code>
+                          </div>`
+                        : html``}
                 </form>
             </div>
             <footer class="pf-c-login__main-footer">

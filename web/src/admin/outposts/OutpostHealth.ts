@@ -34,12 +34,10 @@ export class OutpostHealthElement extends AKElement {
         }
         let versionString = this.outpostHealth.version;
         if (this.outpostHealth.buildHash) {
-            versionString = msg(
-                str`${versionString} (build ${this.outpostHealth.buildHash.substring(0, 8)})`,
-            );
-        }
-        if (this.outpostHealth.fipsEnabled) {
-            versionString = msg(str`${versionString} (FIPS)`);
+            versionString = `${versionString} (build ${this.outpostHealth.buildHash.substring(
+                0,
+                8,
+            )})`;
         }
         return html`<dl class="pf-c-description-list pf-m-compact">
             <div class="pf-c-description-list__group">

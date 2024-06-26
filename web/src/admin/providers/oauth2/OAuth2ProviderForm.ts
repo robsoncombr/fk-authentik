@@ -48,12 +48,6 @@ export const clientTypeOptions = [
     },
 ];
 
-export const defaultScopes = [
-    "goauthentik.io/providers/oauth2/scope-openid",
-    "goauthentik.io/providers/oauth2/scope-email",
-    "goauthentik.io/providers/oauth2/scope-profile",
-];
-
 export const subjectModeOptions = [
     {
         label: msg("Based on the User's hashed ID"),
@@ -152,7 +146,7 @@ export class OAuth2ProviderFormPage extends BaseProviderForm<OAuth2Provider> {
     async send(data: OAuth2Provider): Promise<OAuth2Provider> {
         if (this.instance) {
             return new ProvidersApi(DEFAULT_CONFIG).providersOauth2Update({
-                id: this.instance.pk,
+                id: this.instance.pk || 0,
                 oAuth2ProviderRequest: data,
             });
         } else {
@@ -295,9 +289,14 @@ export class OAuth2ProviderFormPage extends BaseProviderForm<OAuth2Provider> {
                             ${this.propertyMappings?.results.map((scope) => {
                                 let selected = false;
                                 if (!provider?.propertyMappings) {
-                                    selected = scope.managed
-                                        ? defaultScopes.includes(scope.managed)
-                                        : false;
+                                    selected =
+                                        // By default select all managed scope mappings, except offline_access
+                                        (scope.managed?.startsWith(
+                                            "goauthentik.io/providers/oauth2/scope-",
+                                        ) &&
+                                            scope.managed !==
+                                                "goauthentik.io/providers/oauth2/scope-offline_access") ||
+                                        false;
                                 } else {
                                     selected = Array.from(provider?.propertyMappings).some((su) => {
                                         return su == scope.pk;

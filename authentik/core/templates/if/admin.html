@@ -1,9 +1,9 @@
 {% extends "base/skeleton.html" %}
 
-{% load authentik_core %}
+{% load static %}
 
 {% block head %}
-{% versioned_script "dist/admin/AdminInterface-%v.js" %}
+<script src="{% static 'dist/admin/AdminInterface.js' %}?version={{ version }}" type="module"></script>
 <meta name="theme-color" content="#18191a" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 {% include "base/header_js.html" %}

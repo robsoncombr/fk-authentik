@@ -1,6 +1,6 @@
 """Device flow views"""
 
-from typing import Any
+from typing import Any, Optional
 
 from django.http import HttpRequest, HttpResponse
 from django.utils.translation import gettext as _
@@ -18,7 +18,7 @@ from authentik.flows.stage import ChallengeStageView
 from authentik.flows.views.executor import SESSION_KEY_PLAN
 from authentik.lib.utils.urls import redirect_with_qs
 from authentik.policies.views import PolicyAccessView
-from authentik.providers.oauth2.models import DeviceToken
+from authentik.providers.oauth2.models import DeviceToken, OAuth2Provider
 from authentik.providers.oauth2.views.device_finish import (
     PLAN_CONTEXT_DEVICE,
     OAuthDeviceCodeFinishStage,
@@ -31,6 +31,17 @@ from authentik.stages.consent.stage import (
 
 LOGGER = get_logger()
 QS_KEY_CODE = "code"  # nosec
+
+
+def get_application(provider: OAuth2Provider) -> Optional[Application]:
+    """Get application from provider"""
+    try:
+        app = provider.application
+        if not app:
+            return None
+        return app
+    except Application.DoesNotExist:
+        return None
 
 
 class CodeValidatorView(PolicyAccessView):

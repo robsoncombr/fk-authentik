@@ -85,7 +85,7 @@ class PlexAuth:
             resources = self.get_resources()
         except RequestException as exc:
             LOGGER.warning("Unable to fetch user resources", exc=exc)
-            raise Http404 from None
+            raise Http404
         for resource in resources:
             if resource["provides"] != "server":
                 continue

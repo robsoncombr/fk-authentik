@@ -88,7 +88,7 @@ class InitiateView(View):
         try:
             plan = planner.plan(self.request, kwargs)
         except FlowNonApplicableException:
-            raise Http404 from None
+            raise Http404
         for stage in stages_to_append:
             plan.append_stage(stage)
         self.request.session[SESSION_KEY_PLAN] = plan

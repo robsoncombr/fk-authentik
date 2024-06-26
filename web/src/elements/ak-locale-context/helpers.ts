@@ -45,13 +45,12 @@ export function localeCodeFromUrl(param = "locale") {
 const isLocaleCandidate = (v: unknown): v is string =>
     typeof v === "string" && v !== "" && v !== TOMBSTONE;
 
-export function autoDetectLanguage(userReq = TOMBSTONE, brandReq = TOMBSTONE): string {
+export function autoDetectLanguage(requestedCode?: string): string {
     const localeCandidates: string[] = [
-        localeCodeFromUrl("locale"),
-        userReq,
-        window.navigator?.language ?? TOMBSTONE,
-        brandReq,
         globalAK()?.locale ?? TOMBSTONE,
+        localeCodeFromUrl("locale"),
+        requestedCode ?? TOMBSTONE,
+        window.navigator?.language ?? TOMBSTONE,
         DEFAULT_LOCALE,
     ].filter(isLocaleCandidate);
 

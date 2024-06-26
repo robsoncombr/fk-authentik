@@ -1,6 +1,7 @@
+import { sourceLocale, targetLocales } from "@goauthentik/app/locale-codes";
+
 import { configureLocalization } from "@lit/localize";
 
-import { sourceLocale, targetLocales } from "../../locale-codes";
 import { getBestMatchLocale } from "./helpers";
 
 type LocaleGetter = ReturnType<typeof configureLocalization>["getLocale"];

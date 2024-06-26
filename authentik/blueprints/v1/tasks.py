@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field
 from hashlib import sha512
 from pathlib import Path
 from sys import platform
+from typing import Optional
 
 from dacite.core import from_dict
 from django.db import DatabaseError, InternalError, ProgrammingError
@@ -30,7 +31,6 @@ from authentik.blueprints.v1.common import BlueprintLoader, BlueprintMetadata, E
 from authentik.blueprints.v1.importer import Importer
 from authentik.blueprints.v1.labels import LABEL_AUTHENTIK_INSTANTIATE
 from authentik.blueprints.v1.oci import OCI_PREFIX
-from authentik.events.logs import capture_logs
 from authentik.events.models import TaskStatus
 from authentik.events.system_tasks import SystemTask, prefill_task
 from authentik.events.utils import sanitize_dict
@@ -50,14 +50,14 @@ class BlueprintFile:
     version: int
     hash: str
     last_m: int
-    meta: BlueprintMetadata | None = field(default=None)
+    meta: Optional[BlueprintMetadata] = field(default=None)
 
 
 def start_blueprint_watcher():
     """Start blueprint watcher, if it's not running already."""
     # This function might be called twice since it's called on celery startup
-
-    global _file_watcher_started  # noqa: PLW0603
+    # pylint: disable=global-statement
+    global _file_watcher_started
     if _file_watcher_started:
         return
     observer = Observer()
@@ -126,7 +126,7 @@ def blueprints_find() -> list[BlueprintFile]:
         # Check if any part in the path starts with a dot and assume a hidden file
         if any(part for part in path.parts if part.startswith(".")):
             continue
-        with open(path, encoding="utf-8") as blueprint_file:
+        with open(path, "r", encoding="utf-8") as blueprint_file:
             try:
                 raw_blueprint = load(blueprint_file.read(), BlueprintLoader)
             except YAMLError as exc:
@@ -150,7 +150,7 @@ def blueprints_find() -> list[BlueprintFile]:
     throws=(DatabaseError, ProgrammingError, InternalError), base=SystemTask, bind=True
 )
 @prefill_task
-def blueprints_discovery(self: SystemTask, path: str | None = None):
+def blueprints_discovery(self: SystemTask, path: Optional[str] = None):
     """Find blueprints and check if they need to be created in the database"""
     count = 0
     for blueprint in blueprints_find():
@@ -197,7 +197,7 @@ def check_blueprint_v1_file(blueprint: BlueprintFile):
 def apply_blueprint(self: SystemTask, instance_pk: str):
     """Apply single blueprint"""
     self.save_on_success = False
-    instance: BlueprintInstance | None = None
+    instance: Optional[BlueprintInstance] = None
     try:
         instance: BlueprintInstance = BlueprintInstance.objects.filter(pk=instance_pk).first()
         if not instance or not instance.enabled:
@@ -212,24 +212,23 @@ def apply_blueprint(self: SystemTask, instance_pk: str):
         if not valid:
             instance.status = BlueprintInstanceStatus.ERROR
             instance.save()
-            self.set_status(TaskStatus.ERROR, *logs)
+            self.set_status(TaskStatus.ERROR, *[x["event"] for x in logs])
             return
-        with capture_logs() as logs:
-            applied = importer.apply()
-            if not applied:
-                instance.status = BlueprintInstanceStatus.ERROR
-                instance.save()
-                self.set_status(TaskStatus.ERROR, *logs)
-                return
+        applied = importer.apply()
+        if not applied:
+            instance.status = BlueprintInstanceStatus.ERROR
+            instance.save()
+            self.set_status(TaskStatus.ERROR, "Failed to apply")
+            return
         instance.status = BlueprintInstanceStatus.SUCCESSFUL
         instance.last_applied_hash = file_hash
         instance.last_applied = now()
         self.set_status(TaskStatus.SUCCESSFUL)
     except (
-        OSError,
         DatabaseError,
         ProgrammingError,
         InternalError,
+        IOError,
         BlueprintRetrievalFailed,
         EntryInvalidError,
     ) as exc:

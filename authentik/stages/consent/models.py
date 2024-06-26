@@ -37,7 +37,7 @@ class ConsentStage(Stage):
         return ConsentStageSerializer
 
     @property
-    def view(self) -> type[View]:
+    def type(self) -> type[View]:
         from authentik.stages.consent.stage import ConsentStageView
 
         return ConsentStageView
@@ -65,7 +65,7 @@ class UserConsent(SerializerModel, ExpiringModel):
         return UserConsentSerializer
 
     def __str__(self):
-        return f"User Consent {self.application_id} by {self.user_id}"
+        return f"User Consent {self.application} by {self.user}"
 
     class Meta:
         unique_together = (("user", "application", "permissions"),)

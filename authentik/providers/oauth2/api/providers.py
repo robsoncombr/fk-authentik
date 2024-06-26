@@ -135,7 +135,7 @@ class OAuth2ProviderViewSet(UsedByMixin, ModelViewSet):
                     kwargs={"application_slug": provider.application.slug},
                 )
             )
-        except Provider.application.RelatedObjectDoesNotExist:
+        except Provider.application.RelatedObjectDoesNotExist:  # pylint: disable=no-member
             pass
         return Response(data)
 
@@ -170,7 +170,7 @@ class OAuth2ProviderViewSet(UsedByMixin, ModelViewSet):
                 if not for_user:
                     raise ValidationError({"for_user": "User not found"})
             except ValueError:
-                raise ValidationError({"for_user": "input must be numerical"}) from None
+                raise ValidationError({"for_user": "input must be numerical"})
 
         scope_names = ScopeMapping.objects.filter(provider=provider).values_list(
             "scope_name", flat=True

@@ -110,7 +110,10 @@ export class UserWriteStageForm extends BaseStageForm<UserWriteStage> {
                             ${msg("Mark newly created users as inactive.")}
                         </p>
                     </ak-form-element-horizontal>
-                    <ak-form-element-horizontal label=${msg("User type")} name="userType">
+                    <ak-form-element-horizontal
+                        label=${msg("User path template")}
+                        name="userPathTemplate"
+                    >
                         <ak-radio
                             .options=${[
                                 {
@@ -164,7 +167,6 @@ export class UserWriteStageForm extends BaseStageForm<UserWriteStage> {
                             .fetchObjects=${async (query?: string): Promise<Group[]> => {
                                 const args: CoreGroupsListRequest = {
                                     ordering: "name",
-                                    includeUsers: false,
                                 };
                                 if (query !== undefined) {
                                     args.search = query;

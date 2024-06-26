@@ -42,7 +42,6 @@ export class GroupListPage extends TablePage<Group> {
             page: page,
             pageSize: (await uiConfig()).pagination.perPage,
             search: this.search || "",
-            includeUsers: false,
         });
     }
 

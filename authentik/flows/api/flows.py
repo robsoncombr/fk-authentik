@@ -7,23 +7,19 @@ from django.utils.translation import gettext as _
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework.decorators import action
-from rest_framework.fields import BooleanField, CharField, ReadOnlyField, SerializerMethodField
+from rest_framework.fields import BooleanField, CharField, DictField, ListField, ReadOnlyField
 from rest_framework.parsers import MultiPartParser
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.serializers import ModelSerializer, SerializerMethodField
 from rest_framework.viewsets import ModelViewSet
 from structlog.stdlib import get_logger
 
 from authentik.blueprints.v1.exporter import FlowExporter
 from authentik.blueprints.v1.importer import SERIALIZER_CONTEXT_BLUEPRINT, Importer
 from authentik.core.api.used_by import UsedByMixin
-from authentik.core.api.utils import (
-    CacheSerializer,
-    LinkSerializer,
-    ModelSerializer,
-    PassiveSerializer,
-)
-from authentik.events.logs import LogEventSerializer
+from authentik.core.api.utils import CacheSerializer, LinkSerializer, PassiveSerializer
+from authentik.events.utils import sanitize_dict
 from authentik.flows.api.flows_diagram import FlowDiagram, FlowDiagramSerializer
 from authentik.flows.exceptions import FlowNonApplicableException
 from authentik.flows.models import Flow
@@ -111,13 +107,14 @@ class FlowSetSerializer(FlowSerializer):
 class FlowImportResultSerializer(PassiveSerializer):
     """Logs of an attempted flow import"""
 
-    logs = LogEventSerializer(many=True, read_only=True)
+    logs = ListField(child=DictField(), read_only=True)
     success = BooleanField(read_only=True)
 
 
 class FlowViewSet(UsedByMixin, ModelViewSet):
     """Flow Viewset"""
 
+    # pylint: disable=no-member
     queryset = Flow.objects.all().prefetch_related("stages", "policies")
     serializer_class = FlowSerializer
     lookup_field = "slug"
@@ -188,7 +185,7 @@ class FlowViewSet(UsedByMixin, ModelViewSet):
 
         importer = Importer.from_string(file.read().decode())
         valid, logs = importer.validate()
-        import_response.initial_data["logs"] = [LogEventSerializer(log).data for log in logs]
+        import_response.initial_data["logs"] = [sanitize_dict(log) for log in logs]
         import_response.initial_data["success"] = valid
         import_response.is_valid()
         if not valid:
@@ -297,9 +294,8 @@ class FlowViewSet(UsedByMixin, ModelViewSet):
             return bad_request_message(
                 request,
                 _(
-                    "Flow not applicable to current user/request: {messages}".format_map(
-                        {"messages": exc.messages}
-                    )
+                    "Flow not applicable to current user/request: %(messages)s"
+                    % {"messages": exc.messages}
                 ),
             )
         return Response(
